@@ -201,7 +201,7 @@ coreos:
                                                       --log-opt awslogs-group={{ .ClusterName }} \
                                                       --log-opt awslogs-stream={{ .ClusterName }}-worker-$(/usr/bin/curl -s http://169.254.169.254/latest/meta-data/instance-id) \
                                                       > /etc/systemd/system/docker.service.d/docker_log_opts.env"
-        {{/* START: RUN-822 Readable logs in cloud watch */}}
+        {{/* END: RUN-822 Readable logs in cloud watch */}}
 
     - name: flanneld.service
       drop-ins:
