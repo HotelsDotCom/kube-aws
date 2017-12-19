@@ -195,6 +195,8 @@ coreos:
             [Service]
             EnvironmentFile=/etc/systemd/system/docker.service.d/docker_log_opts.env
             ExecStartPre=/bin/sh -c "echo DOCKER_OPTS=--log-driver=awslogs \
+                                                      --log-opt max-size=50m \
+                                                      --log-opt max-file=3 \
                                                       --log-opt awslogs-region={{ .Region }} \
                                                       --log-opt awslogs-group={{ .ClusterName }} \
                                                       --log-opt awslogs-stream={{ .ClusterName }}-worker-$(/usr/bin/curl -s http://169.254.169.254/latest/meta-data/instance-id) \
