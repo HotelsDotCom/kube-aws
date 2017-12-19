@@ -250,6 +250,7 @@ coreos:
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
             ExecStartPre=/usr/bin/systemctl is-active flanneld.service
 
+        {{/* START: RUN-822 Readable logs in cloud watch */}}
         - name: 60-logfilelimit.conf
           content: |
             [Service]
@@ -259,6 +260,7 @@ coreos:
                                                       --log-opt awslogs-group={{ .ClusterName }} \
                                                       --log-opt awslogs-stream={{ .ClusterName }}-controller-$(/usr/bin/curl -s http://169.254.169.254/latest/meta-data/instance-id) \
                                                       > /etc/systemd/system/docker.service.d/docker_log_opts.env"
+        {{/* END: RUN-822 Readable logs in cloud watch */}}
 
     - name: flanneld.service
       drop-ins:
@@ -1171,9 +1173,11 @@ write_files:
       DOCKER_OPT_BIP=""
       DOCKER_OPT_IPMASQ=""
 
+{{/* START: RUN-822 Readable logs in cloud watch */}}
   - path: /etc/systemd/system/docker.service.d/docker_log_opts.env
     content: |
       DOCKER_OPTS=""
+{{/* END: RUN-822 Readable logs in cloud watch */}}
 
   - path: /opt/bin/host-rkt
     permissions: 0755
