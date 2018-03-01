@@ -1068,6 +1068,14 @@ write_files:
       {{ end }}
 {{/* RUN-605 Add Flyte */}}
 
+{{/* RUN-861 Add Helm-deploy-operator */}}
+      {{ if .CustomSettings.HelmDeployOperator.Enabled }}
+      kubectl apply -f "${mfdir}/helm-deploy-crd.yaml"
+      kubectl apply -f "${mfdir}/helm-deploy-operator-rbac.yaml"
+      kubectl apply -f "${mfdir}/helm-deploy-operator.yaml"
+      {{ end }}
+{{/* RUN-861 */}}
+
       # Daemonsets
       applyall "${mfdir}"/kube-proxy"-ds.yaml"
 
@@ -3520,7 +3528,6 @@ write_files:
 {{ if .CustomSettings.Flyte.Enabled }}
   - path: /srv/kubernetes/manifests/flyte-konveyor.yaml
     content: |
-
         apiVersion: extensions/v1beta1
         kind: Deployment
         metadata:
@@ -3554,6 +3561,135 @@ write_files:
                   path: /logs/konveyor
 {{ end }}
 {{/* RUN-605 Add Flyte */}}
+
+{{/* RUN-861 Add  */}}
+{{ if .CustomSettings.HelmDeployOperator.Enabled }}
+  - path: /srv/kubernetes/manifests/helm-deploy-crd.yaml
+    content: |
+        apiVersion: apiextensions.k8s.io/v1beta1
+        kind: CustomResourceDefinition
+        metadata:
+          name: helmdeploys.deployment.hotels.com
+        spec:
+          scope: Namespaced
+          group: deployment.hotels.com
+          version: v1
+          names:
+            kind: HelmDeploy
+            plural: helmdeploys
+            singular: helmdeploy
+            shortNames:
+            - hd
+  - path: /srv/kubernetes/manifests/helm-deploy-operator-rbac.yaml
+    content: |
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: helm-deploy-operator
+          labels:
+            app: helm-deploy-operator
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1beta1
+        kind: ClusterRole
+        metadata:
+          name: helm-deploy-operator
+          labels:
+            app: helm-deploy-operator
+        rules:
+          - apiGroups:
+              - ""
+            resources:
+              - "pods"
+            verbs:
+              - create
+              - list
+              - get
+          - apiGroups:
+              - "development.hotels.com"
+            resources:
+              - "helmdeploys"
+            verbs:
+              - get
+              - list
+              - update
+              - watch
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1beta1
+        kind: ClusterRoleBinding
+        metadata:
+          name: helm-deloy-operator
+          labels:
+            app: helm-deloy-operator
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: helm-deploy-operator
+        subjects:
+          - kind: ServiceAccount
+            name: helm-deploy-operator
+            namespace: kube-public
+
+  - path: /srv/kubernetes/manifests/helm-deploy-operator.yaml
+    content: |
+        apiVersion: apps/v1beta2
+        kind: Deployment
+        metadata:
+          name: helm-deploy-operator
+          namespace: kube-public
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: helm-deploy-operator
+          strategy:
+            type: Recreate
+          template:
+            metadata:
+              labels:
+                app: helm-deploy-operator
+                type: operator
+              # I'm not adding a 'critical' annotation here since it will only be used if the operator runs in the kube-system namespace (which we're not doing): https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
+            spec:
+              priorityClassName: SYSTEM
+              serviceAccountName: helm-deploy-operator
+              containers:
+              - name: helm-deploy-operator
+                image: {{ .CustomSettings.HelmDeployOperator.ImageWithTag }}
+                imagePullPolicy: Always
+                command: ["/helm-deploy-operator"]
+                args: ['-incluster', '-v=5', '-alsologtostderr', '-log_dir=/logs/', '-helmimage={{ .CustomSettings.HelmDeployOperator.Helm.ImageWithTag }}']
+                resources:
+                  requests:
+                    memory: "50Mi"
+                    cpu: "250m"
+                  limits:
+                    memory: "50Mi"
+                    cpu: "250m"
+                ports:
+                - containerPort: 8080
+                readinessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                volumeMounts:
+                - mountPath: /logs
+                  name: logs
+                  readOnly: false
+              volumes:
+              - name: logs
+                hostPath:
+                  path: /logs/helm-deploy-operator
+
+{{ end }}
+{{/* RUN-861 */}}
 
   - path: {{.KubernetesManifestPlugin.ManifestListFile.Path}}
     encoding: gzip+base64
