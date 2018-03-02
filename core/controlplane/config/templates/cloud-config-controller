@@ -1073,6 +1073,7 @@ write_files:
       kubectl apply -f "${mfdir}/helm-deploy-crd.yaml"
       kubectl apply -f "${mfdir}/helm-deploy-operator-rbac.yaml"
       kubectl apply -f "${mfdir}/helm-deploy-operator.yaml"
+      kubectl apply -f "${mfdir}/mantle-deploy.yaml"
       {{ end }}
 {{/* RUN-861 */}}
 
@@ -3562,7 +3563,7 @@ write_files:
 {{ end }}
 {{/* RUN-605 Add Flyte */}}
 
-{{/* RUN-861 Add  */}}
+{{/* RUN-861 Add HelmDeployOperator and associated resources  */}}
 {{ if .CustomSettings.HelmDeployOperator.Enabled }}
   - path: /srv/kubernetes/manifests/helm-deploy-crd.yaml
     content: |
@@ -3580,12 +3581,14 @@ write_files:
             singular: helmdeploy
             shortNames:
             - hd
+
   - path: /srv/kubernetes/manifests/helm-deploy-operator-rbac.yaml
     content: |
         apiVersion: v1
         kind: ServiceAccount
         metadata:
           name: helm-deploy-operator
+          namespace: kube-public
           labels:
             app: helm-deploy-operator
         ---
@@ -3687,6 +3690,19 @@ write_files:
               - name: logs
                 hostPath:
                   path: /logs/helm-deploy-operator
+
+  - path: /srv/kubernetes/manifests/mantle-deploy.yaml
+    content: |
+        apiVersion: deployment.hotels.com/v1
+        kind: HelmDeploy
+        metadata:
+          name: mantle-deploy
+          namespace: mantle
+        spec:
+          chartName: mantle
+          chartLocation: ssh://git@stash.hcom:7999/run/mantle.git
+          artifactUrl: 181651482125.dkr.ecr.us-west-2.amazonaws.com/hotels/mantle:1
+          values: charts/{{ .ClusterName }}.yaml
 
 {{ end }}
 {{/* RUN-861 */}}
