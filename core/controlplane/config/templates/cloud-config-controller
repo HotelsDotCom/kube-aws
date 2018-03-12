@@ -3570,10 +3570,10 @@ write_files:
         apiVersion: apiextensions.k8s.io/v1beta1
         kind: CustomResourceDefinition
         metadata:
-          name: helmdeploys.deployment.hotels.com
+          name: helmdeploys.hotels.com
         spec:
           scope: Namespaced
-          group: deployment.hotels.com
+          group: hotels.com
           version: v1
           names:
             kind: HelmDeploy
@@ -3595,7 +3595,7 @@ write_files:
         apiVersion: rbac.authorization.k8s.io/v1beta1
         kind: ClusterRole
         metadata:
-          name: helm-deploy-operator
+          name: hotels:controller:helm-deploy-operator
           labels:
             app: helm-deploy-operator
         rules:
@@ -3608,7 +3608,7 @@ write_files:
               - list
               - get
           - apiGroups:
-              - "development.hotels.com"
+              - "hotels.com"
             resources:
               - "helmdeploys"
             verbs:
@@ -3620,13 +3620,13 @@ write_files:
         apiVersion: rbac.authorization.k8s.io/v1beta1
         kind: ClusterRoleBinding
         metadata:
-          name: helm-deloy-operator
+          name: hotels:controller:helm-deploy-operator
           labels:
             app: helm-deloy-operator
         roleRef:
           apiGroup: rbac.authorization.k8s.io
           kind: ClusterRole
-          name: helm-deploy-operator
+          name: hotels:controller:helm-deploy-operator
         subjects:
           - kind: ServiceAccount
             name: helm-deploy-operator
@@ -3693,7 +3693,7 @@ write_files:
 
   - path: /srv/kubernetes/manifests/mantle-deploy.yaml
     content: |
-        apiVersion: deployment.hotels.com/v1
+        apiVersion: hotels.com/v1
         kind: HelmDeploy
         metadata:
           name: mantle-deploy
