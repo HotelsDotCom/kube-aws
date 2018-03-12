@@ -1073,7 +1073,6 @@ write_files:
       kubectl apply -f "${mfdir}/helm-deploy-crd.yaml"
       kubectl apply -f "${mfdir}/helm-deploy-operator-rbac.yaml"
       kubectl apply -f "${mfdir}/helm-deploy-operator.yaml"
-      kubectl apply -f "${mfdir}/mantle-deploy.yaml"
       {{ end }}
 {{/* RUN-861 */}}
 
@@ -3622,7 +3621,7 @@ write_files:
         metadata:
           name: hotels:controller:helm-deploy-operator
           labels:
-            app: helm-deloy-operator
+            app: helm-deploy-operator
         roleRef:
           apiGroup: rbac.authorization.k8s.io
           kind: ClusterRole
@@ -3690,20 +3689,6 @@ write_files:
               - name: logs
                 hostPath:
                   path: /logs/helm-deploy-operator
-
-  - path: /srv/kubernetes/manifests/mantle-deploy.yaml
-    content: |
-        apiVersion: hotels.com/v1
-        kind: HelmDeploy
-        metadata:
-          name: mantle-deploy
-          namespace: mantle
-        spec:
-          chartName: mantle
-          chartLocation: ssh://git@stash.hcom:7999/run/mantle.git
-          artifactUrl: 181651482125.dkr.ecr.us-west-2.amazonaws.com/hotels/mantle:1
-          values: charts/{{ .ClusterName }}.yaml
-
 {{ end }}
 {{/* RUN-861 */}}
 
