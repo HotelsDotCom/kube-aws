@@ -4732,33 +4732,24 @@ write_files:
 
   - path: /srv/kubernetes/manifests/tiller-rbac.yaml
     content: |
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: ClusterRole
-        metadata:
-          name: kube-aws:tiller
-        rules:
-          - apiGroups: ["", "extensions", "apps"]
-            resources: ["deployments", "replicasets", "pods", "configmaps", "secrets", "namespaces"]
-            verbs: ["*"]
-        ---
         apiVersion: v1
         kind: ServiceAccount
         metadata:
-          name: kube-aws:tiller
+          name: tiller
           namespace: kube-system
         ---
         apiVersion: rbac.authorization.k8s.io/v1
         kind: ClusterRoleBinding
         metadata:
-          name: kube-aws:tiller
+          name: tiller
         subjects:
         - kind: ServiceAccount
-          name: kube-aws:tiller
+          name: tiller
           namespace: kube-system
         roleRef:
           kind: ClusterRole
-          name: kube-aws:tiller
-          apiGroup: rbac.authorization.k8s.io/v1
+          name: cluster-admin
+          apiGroup: rbac.authorization.k8s.io
 
   - path: /srv/kubernetes/manifests/tiller.yaml
     content: |
@@ -4772,7 +4763,6 @@ write_files:
           name: tiller-deploy
           namespace: kube-system
         spec:
-          serviceAccountName: kube-aws:tiller
           strategy: {}
           template:
             metadata:
@@ -4784,6 +4774,7 @@ write_files:
               annotations:
                 scheduler.alpha.kubernetes.io/critical-pod: ''
             spec:
+              serviceAccountName: tiller
               {{if .Experimental.Admission.Priority.Enabled -}}
               priorityClassName: system-node-critical
               {{ end -}}
