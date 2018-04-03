@@ -4839,7 +4839,6 @@ write_files:
 {{ if .CustomSettings.Flyte.Enabled }}
   - path: /srv/kubernetes/manifests/flyte-konveyor.yaml
     content: |
-
         apiVersion: extensions/v1beta1
         kind: Deployment
         metadata:
