@@ -1,4 +1,4 @@
-{{ define "instance" -}}
+{{ define "instance-script" -}}
 {{- $S3URI := self.Parts.s3.Asset.S3URL -}}
 #!/bin/bash -xe
 echo '{{.EtcdIndexEnvVarName}}={{extra.etcdIndex}}' >> {{.EtcdNodeEnvFileName}}
@@ -23,14 +23,17 @@ run bash -c "aws configure set s3.signature_version s3v4; aws s3 --region $REGIO
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 
-run /bin/sh -c 'echo {{.StackNameEnvVarName}}=$(aws ec2 describe-tags --region "'$REGION'" --filters \
-  "Name=resource-id,Values='$INSTANCE_ID'" \
-  "Name=key,Values=aws:cloudformation:stack-name" \
-  --output json \
-| jq -r ".Tags[].Value") >> {{.EtcdNodeEnvFileName}}'
-
-
 exec /usr/bin/coreos-cloudinit --from-file /var/run/coreos/$USERDATA_FILE
+
+{{ define "instance" -}}
+{ "Fn::Base64": { "Fn::Join" : ["", [
+  "#!/bin/bash -xe\n",
+  "# s3-part-fingerprint: {{ (execTemplate "s3" .) | fingerprint }}\n",
+  {"Fn::Join":["",[ "echo '{{.StackNameEnvVarName}}=", { "Ref": "AWS::StackName" }, "' >> {{.EtcdNodeEnvFileName}}\n" ]]},
+  {{ (execTemplate "instance-script" .) | toJSON  }}
+]]}}
+{{ end }}
+
 {{ end }}
 {{ define "s3" -}}
 #cloud-config

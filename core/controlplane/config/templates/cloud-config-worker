@@ -27,6 +27,7 @@ exec /usr/bin/coreos-cloudinit --from-file /var/run/coreos/$USERDATA_FILE
 {{ define "instance" -}}
 { "Fn::Base64": { "Fn::Join" : ["", [
   "#!/bin/bash -xe\n",
+  "# s3-part-fingerprint: {{ (execTemplate "s3" .) | fingerprint }}\n",
   {"Fn::Join":["",[ "echo '{{.StackNameEnvVarName}}=", { "Ref": "AWS::StackName" }, "' >> {{.StackNameEnvFileName}}\n" ]]},
   {{ (execTemplate "instance-script" .) | toJSON  }}
 ]]}}

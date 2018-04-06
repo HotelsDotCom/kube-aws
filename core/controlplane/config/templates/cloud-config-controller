@@ -1,6 +1,5 @@
-{{ define "instance" -}}
+{{ define "instance-script" -}}
 {{- $S3URI := self.Parts.s3.Asset.S3URL -}}
-#!/bin/bash -xe
  . /etc/environment
 export COREOS_PRIVATE_IPV4 COREOS_PRIVATE_IPV6 COREOS_PUBLIC_IPV4 COREOS_PUBLIC_IPV6
 REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
@@ -22,6 +21,16 @@ run bash -c "aws configure set s3.signature_version s3v4; aws s3 --region $REGIO
 
 exec /usr/bin/coreos-cloudinit --from-file /var/run/coreos/$USERDATA_FILE
 {{ end }}
+
+{{ define "instance" -}}
+{ "Fn::Base64": { "Fn::Join" : ["", [
+  "#!/bin/bash -xe\n",
+  "# s3-part-fingerprint: {{ (execTemplate "s3" .) | fingerprint }}\n",
+  {"Fn::Join":["",[ "echo '{{.StackNameEnvVarName}}=", { "Ref": "AWS::StackName" }, "' >> {{.StackNameEnvFileName}}\n" ]]},
+  {{ (execTemplate "instance-script" .) | toJSON  }}
+]]}}
+{{ end }}
+
 {{ define "s3" -}}
 #cloud-config
 coreos:
@@ -128,6 +137,7 @@ coreos:
         [Service]
         Restart=on-failure
         RemainAfterExit=true
+        EnvironmentFile={{.StackNameEnvFileName}}
         ExecStartPre=/opt/bin/cfn-etcd-environment
         ExecStart=/usr/bin/mv -f /var/run/coreos/etcd-environment /etc/etcd-environment
 {{if .Experimental.AwsEnvironment.Enabled}}
@@ -428,6 +438,7 @@ coreos:
         RestartSec=60
         StartLimitInterval=640
         StartLimitBurst=10
+        EnvironmentFile={{.StackNameEnvFileName}}
         ExecStartPre=/usr/bin/systemctl is-active install-kube-system.service
         ExecStartPre=/usr/bin/systemctl is-active apply-kube-aws-plugins.service
         ExecStartPre=/usr/bin/bash -c "while sleep 1; do if /usr/bin/curl -s -m 20 -f  http://127.0.0.1:8080/healthz > /dev/null &&  /usr/bin/curl -s -m 20 -f  http://127.0.0.1:10252/healthz > /dev/null && /usr/bin/curl -s -m 20 -f  http://127.0.0.1:10251/healthz > /dev/null &&  /usr/bin/curl --insecure -s -m 20 -f  https://127.0.0.1:10250/healthz > /dev/null && /usr/bin/curl -s -m 20 -f http://127.0.0.1:10256/healthz > /dev/null; then break ; fi;  done"
@@ -761,15 +772,8 @@ write_files:
         --trust-keys-from-https \
         {{.AWSCliImage.Options}}{{.AWSCliImage.RktRepo}} --exec=/bin/bash -- \
           -ec \
-          'instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-           stack_name=$(
-             aws ec2 describe-tags --region {{.Region}} --filters \
-               "Name=resource-id,Values=$instance_id" \
-               "Name=key,Values=aws:cloudformation:stack-name" \
-               --output json \
-             | jq -r ".Tags[].Value"
-           )
-           cfn-signal -e 0 --region {{.Region}} --resource {{.Controller.LogicalName}} --stack $stack_name
+          '
+            cfn-signal -e 0 --region {{.Region}} --resource {{.Controller.LogicalName}} --stack '${{.StackNameEnvVarName}}'
           '
 
       rkt rm --uuid-file=/var/run/coreos/cfn-signal.uuid || :
@@ -790,15 +794,8 @@ write_files:
         --trust-keys-from-https \
         {{.AWSCliImage.Options}}{{.AWSCliImage.RktRepo}} --exec=/bin/bash -- \
           -ec \
-          'instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-           stack_name=$(
-             aws ec2 describe-tags --region {{.Region}} --filters \
-               "Name=resource-id,Values=$instance_id" \
-               "Name=key,Values=aws:cloudformation:stack-name" \
-               --output json \
-             | jq -r ".Tags[].Value"
-           )
-           cfn-init -v -c "etcd-client" --region {{.Region}} --resource {{.Controller.LogicalName}} --stack $stack_name
+          '
+            cfn-init -v -c "etcd-client" --region {{.Region}} --resource {{.Controller.LogicalName}} --stack '${{.StackNameEnvVarName}}'
           '
 
       rkt rm --uuid-file=/var/run/coreos/cfn-etcd-environment.uuid || :
