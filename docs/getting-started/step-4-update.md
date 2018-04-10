@@ -6,7 +6,7 @@ There are two distinct categories of cluster update.
 * **Parameter-level update**: Only changes to `cluster.yaml` and/or TLS assets in `credentials/` folder are reflected. To enact this type of update. Modifications to CloudFormation or cloud-config userdata templates will not be reflected. In this case, you do not have to re-render:
 
 ```sh
-kube-aws update --s3-uri s3://<your-bucket-name>/<prefix>
+kube-aws update
 ```
 
 * **Full update**: Any change (besides changes made to the etcd cluster- more on that later) will be enacted, including structural changes to CloudFormation and cloudinit templates. This is the type of upgrade that must be run on installing a new version of kube-aws, or more generally when cloudinit or CloudFormation templates are modified:
@@ -15,7 +15,7 @@ kube-aws update --s3-uri s3://<your-bucket-name>/<prefix>
 kube-aws render stack
 kube-aws render credentials
 git diff # view changes to rendered assets
-kube-aws update --s3-uri s3://<your-bucket-name>/<prefix>
+kube-aws update
 ```
 
 ## Certificate and access token rotation
@@ -34,8 +34,11 @@ More concretely, steps should be taken in order to rotate your certs on nodes ar
 * Execute the update command like:
 
   ```sh
-  kube-aws update --s3-uri s3://<your-bucket-name>/<prefix>
+  kube-aws update
   ```
+
+There are cases where the service account tokens used by the system pods become invalid after credentials update, and
+some of your system pods will break (especially `kube-dns`). Deleting the said secrets will solve the issue (see https://github.com/kubernetes-incubator/kube-aws/issues/1057).
 
 ## The etcd caveat
 

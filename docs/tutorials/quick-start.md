@@ -38,6 +38,7 @@ First run `init` using the information from the pre-requisites section. For exam
   --external-dns-name=quick-start-k8s.mycompany.com \
   --key-name=ec2-key-pair-name \
   --kms-key-arn="arn:aws:kms:us-west-1:123456789012:key/c4f79cb0-f9fb-434a-ac3c-47c5697d51e6"
+  --s3-uri=s3://kube-aws-assets/
 ```
 
 This will generate a `cluster.yaml` file which forms the main configuration for your new cluster. The `cluster.yaml` has many options to adjust your cluster, leave them as the defaults for now.
@@ -61,7 +62,7 @@ The files generated form the basis of the deployment.
 Before we move onto deploying, let's run `validate` to check the work above using the S3 bucket name from the pre-requisites section. For example:
 
 ```bash
-➜ kube-aws validate --s3-uri=s3://kube-aws-assets/
+➜ kube-aws validate
 ```
 
 # Step 3: Launch
@@ -69,7 +70,7 @@ Before we move onto deploying, let's run `validate` to check the work above usin
 Now you've generated and validated the various assets needed to launch a new cluster, let's run the deploy! Run `up` using the S3 bucket name from the pre-requisites section. For example:
 
 ```bash
-➜ kube-aws up --s3-uri=s3://kube-aws-assets/
+➜ kube-aws up
 ```
 
 # Step 4: Deploy an Application

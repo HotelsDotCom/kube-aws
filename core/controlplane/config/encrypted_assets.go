@@ -24,28 +24,29 @@ import (
 
 type RawAssetsOnMemory struct {
 	// PEM encoded TLS assets.
-	CACert         []byte
-	CAKey          []byte
-	WorkerCACert   []byte
-	WorkerCAKey    []byte
-	APIServerCert  []byte
-	APIServerKey   []byte
-	WorkerCert     []byte
-	WorkerKey      []byte
-	AdminCert      []byte
-	AdminKey       []byte
-	EtcdCert       []byte
-	EtcdClientCert []byte
-	EtcdKey        []byte
-	EtcdClientKey  []byte
-	EtcdTrustedCA  []byte
-	KIAMServerCert []byte
-	KIAMServerKey  []byte
-	KIAMAgentCert  []byte
-	KIAMAgentKey   []byte
-	KIAMCACert     []byte
-	OidcCert       []byte
-	OidcKey        []byte
+	CACert            []byte
+	CAKey             []byte
+	WorkerCACert      []byte
+	WorkerCAKey       []byte
+	APIServerCert     []byte
+	APIServerKey      []byte
+	WorkerCert        []byte
+	WorkerKey         []byte
+	AdminCert         []byte
+	AdminKey          []byte
+	EtcdCert          []byte
+	EtcdClientCert    []byte
+	EtcdKey           []byte
+	EtcdClientKey     []byte
+	EtcdTrustedCA     []byte
+	KIAMServerCert    []byte
+	KIAMServerKey     []byte
+	KIAMAgentCert     []byte
+	KIAMAgentKey      []byte
+	KIAMCACert        []byte
+	OidcCert          []byte
+	OidcKey           []byte
+	ServiceAccountKey []byte
 
 	// Other assets.
 	AuthTokens        []byte
@@ -54,28 +55,29 @@ type RawAssetsOnMemory struct {
 
 type RawAssetsOnDisk struct {
 	// PEM encoded TLS assets.
-	CACert         RawCredentialOnDisk
-	CAKey          RawCredentialOnDisk
-	WorkerCACert   RawCredentialOnDisk
-	WorkerCAKey    RawCredentialOnDisk
-	APIServerCert  RawCredentialOnDisk
-	APIServerKey   RawCredentialOnDisk
-	WorkerCert     RawCredentialOnDisk
-	WorkerKey      RawCredentialOnDisk
-	AdminCert      RawCredentialOnDisk
-	AdminKey       RawCredentialOnDisk
-	EtcdCert       RawCredentialOnDisk
-	EtcdClientCert RawCredentialOnDisk
-	EtcdKey        RawCredentialOnDisk
-	EtcdClientKey  RawCredentialOnDisk
-	EtcdTrustedCA  RawCredentialOnDisk
-	KIAMServerCert RawCredentialOnDisk
-	KIAMServerKey  RawCredentialOnDisk
-	KIAMAgentCert  RawCredentialOnDisk
-	KIAMAgentKey   RawCredentialOnDisk
-	KIAMCACert     RawCredentialOnDisk
-	OidcCert       RawCredentialOnDisk
-	OidcKey        RawCredentialOnDisk
+	CACert            RawCredentialOnDisk
+	CAKey             RawCredentialOnDisk
+	WorkerCACert      RawCredentialOnDisk
+	WorkerCAKey       RawCredentialOnDisk
+	APIServerCert     RawCredentialOnDisk
+	APIServerKey      RawCredentialOnDisk
+	WorkerCert        RawCredentialOnDisk
+	WorkerKey         RawCredentialOnDisk
+	AdminCert         RawCredentialOnDisk
+	AdminKey          RawCredentialOnDisk
+	EtcdCert          RawCredentialOnDisk
+	EtcdClientCert    RawCredentialOnDisk
+	EtcdKey           RawCredentialOnDisk
+	EtcdClientKey     RawCredentialOnDisk
+	EtcdTrustedCA     RawCredentialOnDisk
+	KIAMServerCert    RawCredentialOnDisk
+	KIAMServerKey     RawCredentialOnDisk
+	KIAMAgentCert     RawCredentialOnDisk
+	KIAMAgentKey      RawCredentialOnDisk
+	KIAMCACert        RawCredentialOnDisk
+	OidcCert          RawCredentialOnDisk
+	OidcKey           RawCredentialOnDisk
+	ServiceAccountKey RawCredentialOnDisk
 
 	// Other assets.
 	AuthTokens        RawCredentialOnDisk
@@ -84,28 +86,29 @@ type RawAssetsOnDisk struct {
 
 type EncryptedAssetsOnDisk struct {
 	// Encrypted PEM encoded TLS assets.
-	CACert         EncryptedCredentialOnDisk
-	CAKey          EncryptedCredentialOnDisk
-	WorkerCACert   EncryptedCredentialOnDisk
-	WorkerCAKey    EncryptedCredentialOnDisk
-	APIServerCert  EncryptedCredentialOnDisk
-	APIServerKey   EncryptedCredentialOnDisk
-	WorkerCert     EncryptedCredentialOnDisk
-	WorkerKey      EncryptedCredentialOnDisk
-	AdminCert      EncryptedCredentialOnDisk
-	AdminKey       EncryptedCredentialOnDisk
-	EtcdCert       EncryptedCredentialOnDisk
-	EtcdClientCert EncryptedCredentialOnDisk
-	EtcdKey        EncryptedCredentialOnDisk
-	EtcdClientKey  EncryptedCredentialOnDisk
-	EtcdTrustedCA  EncryptedCredentialOnDisk
-	KIAMServerCert EncryptedCredentialOnDisk
-	KIAMServerKey  EncryptedCredentialOnDisk
-	KIAMAgentCert  EncryptedCredentialOnDisk
-	KIAMAgentKey   EncryptedCredentialOnDisk
-	KIAMCACert     EncryptedCredentialOnDisk
-	OidcCert       EncryptedCredentialOnDisk
-	OidcKey        EncryptedCredentialOnDisk
+	CACert            EncryptedCredentialOnDisk
+	CAKey             EncryptedCredentialOnDisk
+	WorkerCACert      EncryptedCredentialOnDisk
+	WorkerCAKey       EncryptedCredentialOnDisk
+	APIServerCert     EncryptedCredentialOnDisk
+	APIServerKey      EncryptedCredentialOnDisk
+	WorkerCert        EncryptedCredentialOnDisk
+	WorkerKey         EncryptedCredentialOnDisk
+	AdminCert         EncryptedCredentialOnDisk
+	AdminKey          EncryptedCredentialOnDisk
+	EtcdCert          EncryptedCredentialOnDisk
+	EtcdClientCert    EncryptedCredentialOnDisk
+	EtcdKey           EncryptedCredentialOnDisk
+	EtcdClientKey     EncryptedCredentialOnDisk
+	EtcdTrustedCA     EncryptedCredentialOnDisk
+	KIAMServerCert    EncryptedCredentialOnDisk
+	KIAMServerKey     EncryptedCredentialOnDisk
+	KIAMAgentCert     EncryptedCredentialOnDisk
+	KIAMAgentKey      EncryptedCredentialOnDisk
+	KIAMCACert        EncryptedCredentialOnDisk
+	OidcCert          EncryptedCredentialOnDisk
+	OidcKey           EncryptedCredentialOnDisk
+	ServiceAccountKey EncryptedCredentialOnDisk
 
 	// Other encrypted assets.
 	AuthTokens        EncryptedCredentialOnDisk
@@ -114,28 +117,29 @@ type EncryptedAssetsOnDisk struct {
 
 type CompactAssets struct {
 	// PEM -> encrypted -> gzip -> base64 encoded TLS assets.
-	CACert         string
-	CAKey          string
-	WorkerCACert   string
-	WorkerCAKey    string
-	APIServerCert  string
-	APIServerKey   string
-	WorkerCert     string
-	WorkerKey      string
-	AdminCert      string
-	AdminKey       string
-	EtcdCert       string
-	EtcdClientCert string
-	EtcdClientKey  string
-	EtcdKey        string
-	EtcdTrustedCA  string
-	KIAMServerCert string
-	KIAMServerKey  string
-	KIAMAgentCert  string
-	KIAMAgentKey   string
-	KIAMCACert     string
-	OidcCert       string
-	OidcKey        string
+	CACert            string
+	CAKey             string
+	WorkerCACert      string
+	WorkerCAKey       string
+	APIServerCert     string
+	APIServerKey      string
+	WorkerCert        string
+	WorkerKey         string
+	AdminCert         string
+	AdminKey          string
+	EtcdCert          string
+	EtcdClientCert    string
+	EtcdClientKey     string
+	EtcdKey           string
+	EtcdTrustedCA     string
+	KIAMServerCert    string
+	KIAMServerKey     string
+	KIAMAgentCert     string
+	KIAMAgentKey      string
+	KIAMCACert        string
+	OidcCert          string
+	OidcKey           string
+	ServiceAccountKey string
 
 	// Encrypted -> gzip -> base64 encoded assets.
 	AuthTokens        string
@@ -236,16 +240,23 @@ func (c *Cluster) NewAssetsOnMemory(caKey *rsa.PrivateKey, caCert *x509.Certific
 	certDuration := time.Duration(c.TLSCertDurationDays) * 24 * time.Hour
 
 	// Generate keys for the various components.
-	keys := make([]*rsa.PrivateKey, 8)
+	keys := make([]*rsa.PrivateKey, 9)
 	var err error
 	for i := range keys {
 		if keys[i], err = tlsutil.NewPrivateKey(); err != nil {
 			return nil, err
 		}
 	}
-{{/* RUN-578 Introduce Dex */}}
-	apiServerKey, workerKey, adminKey, etcdKey, etcdClientKey, kiamAgentKey, kiamServerKey, oidcKey := keys[0], keys[1], keys[2], keys[3], keys[4], keys[5], keys[6], keys[7]
-{{/* RUN-578 Introduce Dex */}}
+
+	{
+		{ /* RUN-578 Introduce Dex */
+		}
+	}
+	apiServerKey, workerKey, adminKey, etcdKey, etcdClientKey, kiamAgentKey, kiamServerKey, oidcKey, serviceAccountKey := keys[0], keys[1], keys[2], keys[3], keys[4], keys[5], keys[6], keys[7], keys[8]
+	{
+		{ /* RUN-578 Introduce Dex */
+		}
+	}
 
 	//Compute kubernetesServiceIP from serviceCIDR
 	_, serviceNet, err := net.ParseCIDR(c.ServiceCIDR)
@@ -339,20 +350,21 @@ func (c *Cluster) NewAssetsOnMemory(caKey *rsa.PrivateKey, caCert *x509.Certific
 	}
 
 	r := &RawAssetsOnMemory{
-		CACert:         tlsutil.EncodeCertificatePEM(caCert),
-		APIServerCert:  tlsutil.EncodeCertificatePEM(apiServerCert),
-		WorkerCert:     tlsutil.EncodeCertificatePEM(workerCert),
-		AdminCert:      tlsutil.EncodeCertificatePEM(adminCert),
-		EtcdCert:       tlsutil.EncodeCertificatePEM(etcdCert),
-		EtcdClientCert: tlsutil.EncodeCertificatePEM(etcdClientCert),
-		OidcCert:       tlsutil.EncodeCertificatePEM(oidcCert),
-		CAKey:          tlsutil.EncodePrivateKeyPEM(caKey),
-		APIServerKey:   tlsutil.EncodePrivateKeyPEM(apiServerKey),
-		WorkerKey:      tlsutil.EncodePrivateKeyPEM(workerKey),
-		AdminKey:       tlsutil.EncodePrivateKeyPEM(adminKey),
-		EtcdKey:        tlsutil.EncodePrivateKeyPEM(etcdKey),
-		EtcdClientKey:  tlsutil.EncodePrivateKeyPEM(etcdClientKey),
-		OidcKey:        tlsutil.EncodePrivateKeyPEM(oidcKey),
+		CACert:            tlsutil.EncodeCertificatePEM(caCert),
+		APIServerCert:     tlsutil.EncodeCertificatePEM(apiServerCert),
+		WorkerCert:        tlsutil.EncodeCertificatePEM(workerCert),
+		AdminCert:         tlsutil.EncodeCertificatePEM(adminCert),
+		EtcdCert:          tlsutil.EncodeCertificatePEM(etcdCert),
+		EtcdClientCert:    tlsutil.EncodeCertificatePEM(etcdClientCert),
+		OidcCert:          tlsutil.EncodeCertificatePEM(oidcCert),
+		CAKey:             tlsutil.EncodePrivateKeyPEM(caKey),
+		APIServerKey:      tlsutil.EncodePrivateKeyPEM(apiServerKey),
+		WorkerKey:         tlsutil.EncodePrivateKeyPEM(workerKey),
+		AdminKey:          tlsutil.EncodePrivateKeyPEM(adminKey),
+		EtcdKey:           tlsutil.EncodePrivateKeyPEM(etcdKey),
+		EtcdClientKey:     tlsutil.EncodePrivateKeyPEM(etcdClientKey),
+		OidcKey:           tlsutil.EncodePrivateKeyPEM(oidcKey),
+		ServiceAccountKey: tlsutil.EncodePrivateKeyPEM(serviceAccountKey),
 
 		AuthTokens:        []byte(authTokens),
 		TLSBootstrapToken: []byte(tlsBootstrapToken),
@@ -397,6 +409,7 @@ func (c *Cluster) NewAssetsOnMemory(caKey *rsa.PrivateKey, caCert *x509.Certific
 
 func ReadRawAssets(dirname string, manageCertificates bool, caKeyRequiredOnController bool, kiamEnabled bool) (*RawAssetsOnDisk, error) {
 	defaultTokensFile := ""
+	defaultServiceAccountKey := "<<<" + filepath.Join(dirname, "apiserver-key.pem")
 	defaultTLSBootstrapToken, err := RandomTLSBootstrapTokenString()
 	if err != nil {
 		return nil, err
@@ -434,6 +447,8 @@ func ReadRawAssets(dirname string, manageCertificates bool, caKeyRequiredOnContr
 			{"etcd-trusted-ca.pem", &r.EtcdTrustedCA, nil},
 			{"oidc.pem", &r.OidcCert, nil},
 			{"oidc-key.pem", &r.OidcKey, nil},
+			// allow setting service-account-key from the apiserver-key by default.
+			{"service-account-key.pem", &r.ServiceAccountKey, &defaultServiceAccountKey},
 		}...)
 
 		if caKeyRequiredOnController {
@@ -464,11 +479,11 @@ func ReadRawAssets(dirname string, manageCertificates bool, caKeyRequiredOnContr
 
 func ReadOrEncryptAssets(dirname string, manageCertificates bool, caKeyRequiredOnController bool, kiamEnabled bool, encryptor CachedEncryptor) (*EncryptedAssetsOnDisk, error) {
 	defaultTokensFile := ""
+	defaultServiceAccountKey := "<<<" + filepath.Join(dirname, "apiserver-key.pem")
 	defaultTLSBootstrapToken, err := RandomTLSBootstrapTokenString()
 	if err != nil {
 		return nil, err
 	}
-
 	r := new(EncryptedAssetsOnDisk)
 
 	type entry struct {
@@ -500,6 +515,7 @@ func ReadOrEncryptAssets(dirname string, manageCertificates bool, caKeyRequiredO
 			{"etcd-trusted-ca.pem", &r.EtcdTrustedCA, nil, false},
 			{"oidc.pem", &r.OidcCert, nil, false},
 			{"oidc-key.pem", &r.OidcKey, nil, true},
+			{"service-account-key.pem", &r.ServiceAccountKey, &defaultServiceAccountKey, true},
 		}...)
 
 		if caKeyRequiredOnController {
@@ -563,6 +579,7 @@ func (r *RawAssetsOnMemory) WriteToDir(dirname string, includeCAKey bool, kiamEn
 		{"oidc.pem", r.OidcCert, true, ""},
 		{"oidc-key.pem", r.OidcKey, true, ""},
 		{"kubelet-tls-bootstrap-token", r.TLSBootstrapToken, true, ""},
+		{"service-account-key.pem", r.ServiceAccountKey, true, "apiserver-key.pem"},
 
 		// Content entirely provided by user, so do not overwrite it if
 		// the file already exists
@@ -685,6 +702,7 @@ func (r *EncryptedAssetsOnDisk) WriteToDir(dirname string, kiamEnabled bool) err
 		{"etcd-client.pem", r.EtcdClientCert},
 		{"etcd-client-key.pem", r.EtcdClientKey},
 		{"etcd-trusted-ca.pem", r.EtcdTrustedCA},
+		{"service-account-key.pem", r.ServiceAccountKey},
 
 		{"tokens.csv", r.AuthTokens},
 		{"kubelet-tls-bootstrap-token", r.TLSBootstrapToken},
@@ -731,24 +749,25 @@ func (r *RawAssetsOnDisk) Compact() (*CompactAssets, error) {
 		CACert:       compact(r.CACert), // why no CAKey here?
 		WorkerCACert: compact(r.WorkerCACert),
 		//WorkerCAKey:    compact(r.WorkerCAKey),
-		APIServerCert:  compact(r.APIServerCert),
-		APIServerKey:   compact(r.APIServerKey),
-		WorkerCert:     compact(r.WorkerCert),
-		WorkerKey:      compact(r.WorkerKey),
-		AdminCert:      compact(r.AdminCert),
-		AdminKey:       compact(r.AdminKey),
-		EtcdCert:       compact(r.EtcdCert),
-		EtcdClientCert: compact(r.EtcdClientCert),
-		EtcdClientKey:  compact(r.EtcdClientKey),
-		EtcdKey:        compact(r.EtcdKey),
-		EtcdTrustedCA:  compact(r.EtcdTrustedCA),
-		KIAMAgentCert:  compact(r.KIAMAgentCert),
-		KIAMAgentKey:   compact(r.KIAMAgentKey),
-		KIAMServerCert: compact(r.KIAMServerCert),
-		KIAMServerKey:  compact(r.KIAMServerKey),
-		KIAMCACert:     compact(r.KIAMCACert),
-		OidcCert:       compact(r.OidcCert),
-		OidcKey:        compact(r.OidcKey),
+		APIServerCert:     compact(r.APIServerCert),
+		APIServerKey:      compact(r.APIServerKey),
+		WorkerCert:        compact(r.WorkerCert),
+		WorkerKey:         compact(r.WorkerKey),
+		AdminCert:         compact(r.AdminCert),
+		AdminKey:          compact(r.AdminKey),
+		EtcdCert:          compact(r.EtcdCert),
+		EtcdClientCert:    compact(r.EtcdClientCert),
+		EtcdClientKey:     compact(r.EtcdClientKey),
+		EtcdKey:           compact(r.EtcdKey),
+		EtcdTrustedCA:     compact(r.EtcdTrustedCA),
+		KIAMAgentCert:     compact(r.KIAMAgentCert),
+		KIAMAgentKey:      compact(r.KIAMAgentKey),
+		KIAMServerCert:    compact(r.KIAMServerCert),
+		KIAMServerKey:     compact(r.KIAMServerKey),
+		KIAMCACert:        compact(r.KIAMCACert),
+		OidcCert:          compact(r.OidcCert),
+		OidcKey:           compact(r.OidcKey),
+		ServiceAccountKey: compact(r.ServiceAccountKey),
 
 		AuthTokens:        compact(r.AuthTokens),
 		TLSBootstrapToken: compact(r.TLSBootstrapToken),
@@ -778,28 +797,30 @@ func (r *EncryptedAssetsOnDisk) Compact() (*CompactAssets, error) {
 		return out
 	}
 	compactAssets := CompactAssets{
-		CACert:         compact(r.CACert),
-		CAKey:          compact(r.CAKey),
-		WorkerCACert:   compact(r.WorkerCACert),
-		WorkerCAKey:    compact(r.WorkerCAKey),
-		APIServerCert:  compact(r.APIServerCert),
-		APIServerKey:   compact(r.APIServerKey),
-		WorkerCert:     compact(r.WorkerCert),
-		WorkerKey:      compact(r.WorkerKey),
-		AdminCert:      compact(r.AdminCert),
-		AdminKey:       compact(r.AdminKey),
-		EtcdCert:       compact(r.EtcdCert),
-		EtcdClientCert: compact(r.EtcdClientCert),
-		EtcdClientKey:  compact(r.EtcdClientKey),
-		EtcdKey:        compact(r.EtcdKey),
-		EtcdTrustedCA:  compact(r.EtcdTrustedCA),
-		KIAMAgentKey:   compact(r.KIAMAgentKey),
-		KIAMAgentCert:  compact(r.KIAMAgentCert),
-		KIAMServerKey:  compact(r.KIAMServerKey),
-		KIAMServerCert: compact(r.KIAMServerCert),
-		KIAMCACert:     compact(r.KIAMCACert),
-		OidcCert:       compact(r.OidcCert),
-		OidcKey:        compact(r.OidcKey),
+		CACert:            compact(r.CACert),
+		CAKey:             compact(r.CAKey),
+		WorkerCACert:      compact(r.WorkerCACert),
+		WorkerCAKey:       compact(r.WorkerCAKey),
+		APIServerCert:     compact(r.APIServerCert),
+		APIServerKey:      compact(r.APIServerKey),
+		WorkerCert:        compact(r.WorkerCert),
+		WorkerKey:         compact(r.WorkerKey),
+		AdminCert:         compact(r.AdminCert),
+		AdminKey:          compact(r.AdminKey),
+		EtcdCert:          compact(r.EtcdCert),
+		EtcdClientCert:    compact(r.EtcdClientCert),
+		EtcdClientKey:     compact(r.EtcdClientKey),
+		EtcdKey:           compact(r.EtcdKey),
+		EtcdTrustedCA:     compact(r.EtcdTrustedCA),
+		KIAMAgentKey:      compact(r.KIAMAgentKey),
+		KIAMAgentCert:     compact(r.KIAMAgentCert),
+		KIAMServerKey:     compact(r.KIAMServerKey),
+		KIAMServerCert:    compact(r.KIAMServerCert),
+		KIAMCACert:        compact(r.KIAMCACert),
+		OidcCert:          compact(r.OidcCert),
+		OidcKey:           compact(r.OidcKey),
+		ServiceAccountKey: compact(r.ServiceAccountKey),
+
 		AuthTokens:        compact(r.AuthTokens),
 		TLSBootstrapToken: compact(r.TLSBootstrapToken),
 	}

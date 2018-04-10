@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"regexp"
@@ -27,18 +28,19 @@ func TestMainClusterConfig(t *testing.T) {
 	s3URI, s3URIExists := os.LookupEnv("KUBE_AWS_S3_DIR_URI")
 
 	if !s3URIExists || s3URI == "" {
-		s3URI = "s3://examplebucket/exampledir"
+		s3URI = "s3://mybucket/mydir"
 		t.Logf(`Falling back s3URI to a stub value "%s" for tests of validating stack templates. No assets will actually be uploaded to S3`, s3URI)
+	} else {
+		log.Printf("s3URI is %s", s3URI)
 	}
 
 	s3Loc, err := cfnstack.S3URIFromString(s3URI)
-	s3Bucket := s3Loc.Bucket()
-	s3Dir := s3Loc.PathComponents()[0]
-
 	if err != nil {
 		t.Errorf("failed to parse s3 uri: %v", err)
 		t.FailNow()
 	}
+	s3Bucket := s3Loc.Bucket()
+	s3Dir := s3Loc.PathComponents()[0]
 
 	firstAz := kubeAwsSettings.region + "c"
 
@@ -399,7 +401,6 @@ func TestMainClusterConfig(t *testing.T) {
 
 	mainClusterYaml := kubeAwsSettings.mainClusterYaml()
 	minimalValidConfigYaml := kubeAwsSettings.minimumValidClusterYamlWithAZ("c")
-
 	configYamlWithoutExernalDNSName := kubeAwsSettings.mainClusterYamlWithoutAPIEndpoint() + `
 availabilityZone: us-west-1c
 `
@@ -2963,7 +2964,7 @@ vpc:
   id: vpc-1a2b3c4d
 subnets:
 - name: Subnet0
-  availabilityZone: us-west-1c
+  availabilityZone: ` + firstAz + `
   instanceCIDR: "10.0.0.0/24"
   routeTable:
     id: rtb-1a2b3c4d
@@ -3045,7 +3046,7 @@ worker:
 				hasDefaultExperimentalFeatures,
 				func(c *config.Config, t *testing.T) {
 					if len(c.NodePools[0].IAMConfig.Role.ManagedPolicies) < 2 {
-						t.Errorf("iam.role.managedPolicies: incorrect number of policies expected=2 actual=%s", len(c.NodePools[0].IAMConfig.Role.ManagedPolicies))
+						t.Errorf("iam.role.managedPolicies: incorrect number of policies expected=2 actual=%d", len(c.NodePools[0].IAMConfig.Role.ManagedPolicies))
 					}
 					if c.NodePools[0].IAMConfig.Role.ManagedPolicies[0].Arn != "arn:aws:iam::aws:policy/AdministratorAccess" {
 						t.Errorf("iam.role.managedPolicies: expected=arn:aws:iam::aws:policy/AdministratorAccess actual=%s", c.NodePools[0].IAMConfig.Role.ManagedPolicies[0].Arn)
@@ -3408,7 +3409,7 @@ worker:
 			})
 
 			helper.WithDummyCredentials(func(dummyAssetsDir string) {
-				var stackTemplateOptions = root.NewOptions(s3URI, false, false)
+				var stackTemplateOptions = root.NewOptions(false, false)
 				stackTemplateOptions.AssetsDir = dummyAssetsDir
 				stackTemplateOptions.ControllerTmplFile = "../../core/controlplane/config/templates/cloud-config-controller"
 				stackTemplateOptions.WorkerTmplFile = "../../core/controlplane/config/templates/cloud-config-worker"

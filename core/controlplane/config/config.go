@@ -1,10 +1,5 @@
 package config
 
-//go:generate go run ../../../codegen/templates_gen.go CloudConfigController=cloud-config-controller CloudConfigWorker=cloud-config-worker CloudConfigEtcd=cloud-config-etcd DefaultClusterConfig=cluster.yaml KubeConfigTemplate=kubeconfig.tmpl StackTemplateTemplate=stack-template.json
-//go:generate gofmt -w templates.go
-//go:generate go run ../../../codegen/files_gen.go Etcdadm=../../../etcdadm/etcdadm
-//go:generate gofmt -w files.go
-
 import (
 	"encoding/json"
 	"errors"
@@ -33,6 +28,13 @@ const (
 
 	credentialsDir = "credentials"
 	userDataDir    = "userdata"
+
+	// Experimental SelfHosting feature default images.
+	kubeNetworkingSelfHostingDefaultCalicoNodeImageTag = "v3.0.3"
+	kubeNetworkingSelfHostingDefaultCalicoCniImageTag  = "v2.0.1"
+	kubeNetworkingSelfHostingDefaultFlannelImageTag    = "v0.9.1"
+	kubeNetworkingSelfHostingDefaultFlannelCniImageTag = "v0.3.0"
+	kubeNetworkingSelfHostingDefaultTyphaImageTag      = "v0.6.2"
 )
 
 func NewDefaultCluster() *Cluster {
@@ -62,6 +64,9 @@ func NewDefaultCluster() *Cluster {
 				Enabled: false,
 			},
 			ValidatingAdmissionWebhook{
+				Enabled: false,
+			},
+			OwnerReferencesPermissionEnforcement{
 				Enabled: false,
 			},
 		},
@@ -178,6 +183,20 @@ func NewDefaultCluster() *Cluster {
 			KubernetesDashboard: KubernetesDashboard{
 				AdminPrivileges: true,
 				InsecureLogin:   false,
+			},
+			Kubernetes: Kubernetes{
+				Networking: Networking{
+					SelfHosting: SelfHosting{
+						Enabled:         false,
+						Type:            "canal",
+						Typha:           false,
+						CalicoNodeImage: model.Image{Repo: "quay.io/calico/node", Tag: kubeNetworkingSelfHostingDefaultCalicoNodeImageTag, RktPullDocker: false},
+						CalicoCniImage:  model.Image{Repo: "quay.io/calico/cni", Tag: kubeNetworkingSelfHostingDefaultCalicoCniImageTag, RktPullDocker: false},
+						FlannelImage:    model.Image{Repo: "quay.io/coreos/flannel", Tag: kubeNetworkingSelfHostingDefaultFlannelImageTag, RktPullDocker: false},
+						FlannelCniImage: model.Image{Repo: "quay.io/coreos/flannel-cni", Tag: kubeNetworkingSelfHostingDefaultFlannelCniImageTag, RktPullDocker: false},
+						TyphaImage:      model.Image{Repo: "quay.io/calico/typha", Tag: kubeNetworkingSelfHostingDefaultTyphaImageTag, RktPullDocker: false},
+					},
+				},
 			},
 			CloudFormationStreaming:            true,
 			HyperkubeImage:                     model.Image{Repo: "k8s.gcr.io/hyperkube-amd64", Tag: k8sVer, RktPullDocker: true},
@@ -438,6 +457,7 @@ type DeploymentSettings struct {
 	ComputedDeploymentSettings
 	CloudFormation              model.CloudFormation  `yaml:"cloudformation,omitempty"`
 	ClusterName                 string                `yaml:"clusterName,omitempty"`
+	S3URI                       string                `yaml:"s3URI,omitempty"`
 	KeyName                     string                `yaml:"keyName,omitempty"`
 	Region                      model.Region          `yaml:",inline"`
 	AvailabilityZone            string                `yaml:"availabilityZone,omitempty"`
@@ -497,6 +517,7 @@ type DeploymentSettings struct {
 	PauseImage                         model.Image `yaml:"pauseImage,omitempty"`
 	FlannelImage                       model.Image `yaml:"flannelImage,omitempty"`
 	JournaldCloudWatchLogsImage        model.Image `yaml:"journaldCloudWatchLogsImage,omitempty"`
+	Kubernetes                         Kubernetes  `yaml:"kubernetes,omitempty"`
 }
 
 // Part of configuration which is specific to worker nodes
@@ -580,13 +601,14 @@ type Experimental struct {
 }
 
 type Admission struct {
-	PodSecurityPolicy          PodSecurityPolicy          `yaml:"podSecurityPolicy"`
-	AlwaysPullImages           AlwaysPullImages           `yaml:"alwaysPullImages"`
-	DenyEscalatingExec         DenyEscalatingExec         `yaml:"denyEscalatingExec"`
-	Initializers               Initializers               `yaml:"initializers"`
-	Priority                   Priority                   `yaml:"priority"`
-	MutatingAdmissionWebhook   MutatingAdmissionWebhook   `yaml:"mutatingAdmissionWebhook"`
-	ValidatingAdmissionWebhook ValidatingAdmissionWebhook `yaml:"validatingAdmissionWebhook"`
+	PodSecurityPolicy                    PodSecurityPolicy                    `yaml:"podSecurityPolicy"`
+	AlwaysPullImages                     AlwaysPullImages                     `yaml:"alwaysPullImages"`
+	DenyEscalatingExec                   DenyEscalatingExec                   `yaml:"denyEscalatingExec"`
+	Initializers                         Initializers                         `yaml:"initializers"`
+	Priority                             Priority                             `yaml:"priority"`
+	MutatingAdmissionWebhook             MutatingAdmissionWebhook             `yaml:"mutatingAdmissionWebhook"`
+	ValidatingAdmissionWebhook           ValidatingAdmissionWebhook           `yaml:"validatingAdmissionWebhook"`
+	OwnerReferencesPermissionEnforcement OwnerReferencesPermissionEnforcement `yaml:"ownerReferencesPermissionEnforcement"`
 }
 
 type AlwaysPullImages struct {
@@ -614,6 +636,10 @@ type MutatingAdmissionWebhook struct {
 }
 
 type ValidatingAdmissionWebhook struct {
+	Enabled bool `yaml:"enabled"`
+}
+
+type OwnerReferencesPermissionEnforcement struct {
 	Enabled bool `yaml:"enabled"`
 }
 
@@ -691,14 +717,23 @@ type LocalStreaming struct {
 	interval int    `yaml:"interval"`
 }
 
-type NetworkingDaemonSets struct {
+type Kubernetes struct {
+	Networking Networking `yaml:"networking,omitempty"`
+}
+
+type Networking struct {
+	SelfHosting SelfHosting `yaml:"selfHosting"`
+}
+
+type SelfHosting struct {
 	Enabled         bool        `yaml:"enabled"`
+	Type            string      `yaml:"type"`
 	Typha           bool        `yaml:"typha"`
-	CalicoNodeImage model.Image `yaml:"calico-node-image"`
-	CalicoCniImage  model.Image `yaml:"calico-cni-image"`
-	FlannelImage    model.Image `yaml:"flannel-image"`
-	FlannelCniImage model.Image `yaml:"flannel-cni-image"`
-	TyphaImage      model.Image `yaml:"typha-image"`
+	CalicoNodeImage model.Image `yaml:"calicoNodeImage"`
+	CalicoCniImage  model.Image `yaml:"calicoCniImage"`
+	FlannelImage    model.Image `yaml:"flannelImage"`
+	FlannelCniImage model.Image `yaml:"flannelCniImage"`
+	TyphaImage      model.Image `yaml:"typhaImage"`
 }
 
 func (c *LocalStreaming) Interval() int64 {
@@ -968,6 +1003,7 @@ type InitialConfig struct {
 	KeyName          string
 	NoRecordSet      bool
 	Region           model.Region
+	S3URI            string
 }
 
 // Config contains configuration parameters available when rendering userdata injected into a controller or an etcd node from golang text templates
@@ -995,6 +1031,10 @@ type Config struct {
 // This is NOT intended to be used to reference stack name from cloud-config as the target of awscli or cfn-bootstrap-tools commands e.g. `cfn-init` and `cfn-signal`
 func (c Cluster) StackName() string {
 	return "control-plane"
+}
+
+func (c Cluster) StackNameEnvFileName() string {
+	return "/etc/environment"
 }
 
 func (c Cluster) StackNameEnvVarName() string {
@@ -1209,6 +1249,15 @@ func (c Cluster) validate() error {
 		}
 	}
 
+	if c.Kubernetes.Networking.SelfHosting.Enabled {
+		if (c.Kubernetes.Networking.SelfHosting.Type != "canal") && (c.Kubernetes.Networking.SelfHosting.Type != "flannel") {
+			return fmt.Errorf("networkingdaemonsets - style must be either 'canal' or 'flannel'")
+		}
+		if c.Kubernetes.Networking.SelfHosting.Typha && c.Kubernetes.Networking.SelfHosting.Type != "canal" {
+			return fmt.Errorf("networkingdaemonsets - you can only enable typha when deploying type 'canal'")
+		}
+	}
+
 	return nil
 }
 
@@ -1248,6 +1297,9 @@ func (c DeploymentSettings) Validate() (*DeploymentValidationResult, error) {
 	}
 	if c.ClusterName == "" {
 		return nil, errors.New("clusterName must be set")
+	}
+	if c.S3URI == "" {
+		return nil, errors.New("s3URI must be set")
 	}
 	if c.KMSKeyARN == "" && c.AssetsEncryptionEnabled() {
 		return nil, errors.New("kmsKeyArn must be set")

@@ -85,6 +85,7 @@ $ kube-aws init \
 --availability-zone=us-west-1c \
 --key-name=key-pair-name \
 --kms-key-arn="arn:aws:kms:us-west-1:xxxxxxxxxx:key/xxxxxxxxxxxxxxxxxxx"
+--s3-uri=s3://my-kube-aws-assets-bucket
 ```
 
 Here `us-west-1c` is used for parameter `--availability-zone`, but supported availability zone varies among AWS accounts.
@@ -384,7 +385,7 @@ The `validate` command check the validity of your changes to the cloud-config us
 This is an important step to make sure your stack will launch successfully:
 
 ```sh
-$ kube-aws validate --s3-uri s3://<your-bucket-name>/<prefix>
+$ kube-aws validate
 ```
 
 If your files are valid, you are ready to [launch your cluster][getting-started-step-3].
