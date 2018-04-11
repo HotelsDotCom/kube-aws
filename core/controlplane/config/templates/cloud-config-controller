@@ -828,7 +828,7 @@ write_files:
         if ! kubectl apply -f $(echo "$@" | tr ' ' ','); then
           set -e
           kubectl delete --ignore-not-found=true -f $(echo "$@" | tr ' ' ',')
-          kubectl apply -f $(echo "$@" | tr ' ' ',')
+          kubectl create -f $(echo "$@" | tr ' ' ',')
         fi
         set -e
 {{/* RUN-1070-handle-kubectl-apply-failure */}}
