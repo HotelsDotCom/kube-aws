@@ -3413,13 +3413,8 @@ write_files:
           command:
           - /hyperkube
           - apiserver
-{{/* RUN Enable verbose logging */}}
-          - --v=3
-{{/* RUN Enable verbose logging */}}
           - --apiserver-count={{if .MinControllerCount}}{{ .MinControllerCount }}{{else}}{{ .ControllerCount }}{{end}}
-{{/* RUN 935 start up with bind address of 127.0.0.1 until SA keys have been properly updated */}}
-          - --bind-address=127.0.0.1
-{{/* RUN 935 start up with bind address of 127.0.0.1 until SA keys have been properly updated */}}
+          - --bind-address=0.0.0.0
           - --etcd-servers=#ETCD_ENDPOINTS#
           - --etcd-cafile=/etc/kubernetes/ssl/etcd-trusted-ca.pem
           - --etcd-certfile=/etc/kubernetes/ssl/etcd-client.pem
