@@ -105,6 +105,11 @@ func NewDefaultCluster() *Cluster {
 		Kube2IamSupport: Kube2IamSupport{
 			Enabled: false,
 		},
+		GpuSupport: GpuSupport{
+			Enabled:      false,
+			Version:      "",
+			InstallImage: "shelmangroup/coreos-nvidia-driver-installer:latest",
+		},
 		KubeletOpts: "",
 		LoadBalancer: LoadBalancer{
 			Enabled: false,
@@ -123,15 +128,6 @@ func NewDefaultCluster() *Cluster {
 			ClientId:      "kubernetes",
 			UsernameClaim: "email",
 			GroupsClaim:   "groups",
-		},
-		NetworkingDaemonSets: NetworkingDaemonSets{
-			Enabled:         false,
-			Typha:           false,
-			CalicoNodeImage: model.Image{Repo: "quay.io/calico/node", Tag: "v3.0.3", RktPullDocker: false},
-			CalicoCniImage:  model.Image{Repo: "quay.io/calico/cni", Tag: "v2.0.1", RktPullDocker: false},
-			FlannelImage:    model.Image{Repo: "quay.io/coreos/flannel", Tag: "v0.9.1", RktPullDocker: false},
-			FlannelCniImage: model.Image{Repo: "quay.io/coreos/flannel-cni", Tag: "v0.3.0", RktPullDocker: false},
-			TyphaImage:      model.Image{Repo: "quay.io/calico/typha", Tag: "v0.6.2", RktPullDocker: false},
 		},
 	}
 
@@ -589,6 +585,7 @@ type Experimental struct {
 	EphemeralImageStorage       EphemeralImageStorage          `yaml:"ephemeralImageStorage"`
 	KIAMSupport                 KIAMSupport                    `yaml:"kiamSupport,omitempty"`
 	Kube2IamSupport             Kube2IamSupport                `yaml:"kube2IamSupport,omitempty"`
+	GpuSupport                  GpuSupport                     `yaml:"gpuSupport,omitempty"`
 	KubeletOpts                 string                         `yaml:"kubeletOpts,omitempty"`
 	LoadBalancer                LoadBalancer                   `yaml:"loadBalancer"`
 	TargetGroup                 TargetGroup                    `yaml:"targetGroup"`
@@ -597,7 +594,6 @@ type Experimental struct {
 	DisableSecurityGroupIngress bool                           `yaml:"disableSecurityGroupIngress"`
 	NodeMonitorGracePeriod      string                         `yaml:"nodeMonitorGracePeriod"`
 	model.UnknownKeys           `yaml:",inline"`
-	NetworkingDaemonSets        NetworkingDaemonSets `yaml:"networkingDaemonSets"`
 }
 
 type Admission struct {
@@ -692,6 +688,12 @@ type KIAMSupport struct {
 
 type Kube2IamSupport struct {
 	Enabled bool `yaml:"enabled"`
+}
+
+type GpuSupport struct {
+	Enabled      bool   `yaml:"enabled"`
+	Version      string `yaml:"version"`
+	InstallImage string `yaml:"installImage"`
 }
 
 type KubeResourcesAutosave struct {
