@@ -36,7 +36,7 @@ exec /usr/bin/coreos-cloudinit --from-file /var/run/coreos/$USERDATA_FILE
 coreos:
   update:
     reboot-strategy: "off"
-  {{ if not .Kubernetes.Networking.SelfHosting.Enabled -}} 
+  {{ if not .Kubernetes.Networking.SelfHosting.Enabled -}}
   flannel:
     interface: $private_ipv4
     etcd_cafile: /etc/kubernetes/ssl/etcd-trusted-ca.pem
@@ -1385,7 +1385,7 @@ write_files:
             name: calico-typha
         selector:
           k8s-app: calico-typha
-      
+
       ---
       # This manifest creates a Deployment of Typha to back the above service.
 
@@ -1703,10 +1703,10 @@ write_files:
               - name: flannel-cfg
                 configMap:
                   name: canal-config
-      
+
       # Canal DaemonSet for Nodes - Typha can be enabled.
       ---
-      # This manifest installs the calico/node container, as well 
+      # This manifest installs the calico/node container, as well
       # as the Calico CNI plugins and network config on
       # each master and worker node in a Kubernetes cluster.
       kind: DaemonSet
@@ -2008,7 +2008,7 @@ write_files:
           kind: NetworkPolicy
           plural: networkpolicies
           singular: networkpolicy
-  
+
   - path: /srv/kubernetes/rbac/network-daemonsets.yaml
     content: |
       apiVersion: v1
@@ -2122,7 +2122,7 @@ write_files:
             - nodes/status
           verbs:
             - patch
-      
+
       ---
       kind: ClusterRoleBinding
       apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -2569,7 +2569,7 @@ write_files:
       sed -i -e "s#\$ETCDCA#$etcd_ca#g" /srv/kubernetes/manifests/calico.yaml
       sed -i -e "s#\$ETCDCERT#$etcd_cert#g" /srv/kubernetes/manifests/calico.yaml
       sed -i -e "s#\$ETCDKEY#$etcd_key#g" /srv/kubernetes/manifests/calico.yaml
-      
+
 {{ if .KubeResourcesAutosave.Enabled }}
   - path: /srv/kubernetes/manifests/kube-resources-autosave-de.yaml
     content: |
@@ -3679,7 +3679,7 @@ write_files:
           - --authentication-token-webhook-cache-ttl={{ .Experimental.Authentication.Webhook.CacheTTL }}
           {{ end }}
           - --advertise-address=$private_ipv4
-          - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass{{if .Experimental.Admission.PodSecurityPolicy.Enabled}},PodSecurityPolicy{{ end }}{{if .Experimental.Admission.AlwaysPullImages.Enabled}},AlwaysPullImages{{ end }}{{if .Experimental.NodeAuthorizer.Enabled}},NodeRestriction{{end}},ResourceQuota{{if .Experimental.Admission.DenyEscalatingExec.Enabled}},DenyEscalatingExec{{end}}{{if .Experimental.Admission.Initializers.Enabled}},Initializers{{end}}{{if .Experimental.Admission.Priority.Enabled}},Priority{{end}},DefaultTolerationSeconds{{if .Experimental.Admission.MutatingAdmissionWebhook.Enabled}},MutatingAdmissionWebhook{{end}}{{if .Experimental.Admission.ValidatingAdmissionWebhook.Enabled}},ValidatingAdmissionWebhook{{end}}
+          - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass{{if .Experimental.Admission.PodSecurityPolicy.Enabled}},PodSecurityPolicy{{ end }}{{if .Experimental.Admission.AlwaysPullImages.Enabled}},AlwaysPullImages{{ end }}{{if .Experimental.NodeAuthorizer.Enabled}},NodeRestriction{{end}},ResourceQuota{{if .Experimental.Admission.DenyEscalatingExec.Enabled}},DenyEscalatingExec{{end}}{{if .Experimental.Admission.Initializers.Enabled}},Initializers{{end}}{{if .Experimental.Admission.Priority.Enabled}},Priority{{end}},DefaultTolerationSeconds{{if .Experimental.Admission.MutatingAdmissionWebhook.Enabled}},MutatingAdmissionWebhook{{end}}{{if .Experimental.Admission.ValidatingAdmissionWebhook.Enabled}},ValidatingAdmissionWebhook{{end}}{{if .Experimental.Admission.PersistentVolumeClaimResize.Enabled}},PersistentVolumeClaimResize{{end}}
 {{/* RUN-578 Introduce Dex */}}
           {{if .Experimental.Oidc.Enabled}}
           - --anonymous-auth=true
