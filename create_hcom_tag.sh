@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -uex
+ 
 usage() {
     >&2 cat <<EOF
 Usage: $0 BUILD_NUMBER
