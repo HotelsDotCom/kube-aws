@@ -758,10 +758,6 @@ write_files:
         fi
 
         if [[ "${updated}" == "true" ]]; then
-          if [[ "${filter}" == "k8s_kube-apiserver*" ]]; then
-            # Once we have run it is ok for apiservers to bind to 0.0.0.0
-            sed -e 's/bind-address=127.0.0.1/bind-address=0.0.0.0/g' -i /etc/kubernetes/manifests/kube-apiserver.yaml
-          fi
           log "killing docker container matching ${filter}"
           docker ps --filter name=$filter -q | xargs --no-run-if-empty docker rm -f
         fi
@@ -790,6 +786,10 @@ write_files:
 
       update_key "$1.apiserver" "${SECRET_JSON}" "k8s_kube-apiserver*"
       update_key "$1.controller" "${SECRET_JSON}" "k8s_kube-controller-manager*"
+      is_localonly_bind=$(cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep "bind-address=127.0.0.1")
+      if [[ -n "$test_bind" ]]; then
+        sed -e 's/bind-address=127.0.0.1/bind-address=0.0.0.0/g' -i /etc/kubernetes/manifests/kube-apiserver.yaml
+      fi
 
 {{/* RUN-509 Remove vault-based certs */}}
 
