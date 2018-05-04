@@ -784,12 +784,12 @@ write_files:
         SECRET_JSON=$(get_key "$P") || :
       done
 
-      update_key "$1.apiserver" "${SECRET_JSON}" "k8s_kube-apiserver*"
-      update_key "$1.controller" "${SECRET_JSON}" "k8s_kube-controller-manager*"
       is_localonly_bind=$(cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep "bind-address=127.0.0.1")
-      if [[ -n "$test_bind" ]]; then
+      if [[ -n "$is_localonly_bind" ]]; then
         sed -e 's/bind-address=127.0.0.1/bind-address=0.0.0.0/g' -i /etc/kubernetes/manifests/kube-apiserver.yaml
       fi
+      update_key "$1.apiserver" "${SECRET_JSON}" "k8s_kube-apiserver*"
+      update_key "$1.controller" "${SECRET_JSON}" "k8s_kube-controller-manager*"
 
 {{/* RUN-509 Remove vault-based certs */}}
 
