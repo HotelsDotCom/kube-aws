@@ -394,9 +394,9 @@ coreos:
         {{ else }}--cluster-dns={{.DNSServiceIP}} \
         {{ end }}--cluster-domain=cluster.local \
         --cloud-provider=aws \
-        {{if .Experimental.Admission.Priority.Enabled}}
-        --feature-gates=PodPriority=true \
-        {{end}}\
+        {{if or (.Experimental.Admission.Priority.Enabled) (.Experimental.Admission.PersistentVolumeClaimResize.Enabled) -}}
+        --feature-gates=PodPriority={{.Experimental.Admission.Priority.Enabled}},ExpandPersistentVolumes={{.Experimental.Admission.PersistentVolumeClaimResize.Enabled}} \
+        {{end -}}\
         $KUBELET_OPTS
         Restart=always
         RestartSec=10
@@ -3711,8 +3711,8 @@ write_files:
           - --service-account-key-file=/etc/kubernetes/ssl/serviceaccount-key.pem.apiserver
 {{/* RUN-509 Remove vault-based certs DO NOT TOUCH THIS LINE */}}
           - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true{{if .Experimental.Admission.PodSecurityPolicy.Enabled}},extensions/v1beta1/podsecuritypolicy=true{{ end }}{{if .Experimental.Admission.Initializers.Enabled}},admissionregistration.k8s.io/v1alpha1{{end}}{{if .Experimental.Admission.Priority.Enabled}},scheduling.k8s.io/v1alpha1=true{{end}}
-         {{if .Experimental.Admission.Priority.Enabled}}
-          - --feature-gates=PodPriority=true
+         {{if or (.Experimental.Admission.Priority.Enabled) (.Experimental.Admission.PersistentVolumeClaimResize.Enabled)}}
+          - --feature-gates=PodPriority={{.Experimental.Admission.Priority.Enabled}},ExpandPersistentVolumes={{.Experimental.Admission.PersistentVolumeClaimResize.Enabled}}
          {{end}}
           - --cloud-provider=aws
 {{/* RUN Attempt to prevent apiserver->etcd lockups. https://github.com/kubernetes/kubernetes/issues/47131#issuecomment-338166775 */}}
@@ -3900,8 +3900,8 @@ write_files:
           - scheduler
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-         {{if .Experimental.Admission.Priority.Enabled}}
-          - --feature-gates=PodPriority=true
+         {{if or (.Experimental.Admission.Priority.Enabled) (.Experimental.Admission.PersistentVolumeClaimResize.Enabled)}}
+          - --feature-gates=PodPriority={{.Experimental.Admission.Priority.Enabled}},ExpandPersistentVolumes={{.Experimental.Admission.PersistentVolumeClaimResize.Enabled}}
          {{end}}
           resources:
             requests:
