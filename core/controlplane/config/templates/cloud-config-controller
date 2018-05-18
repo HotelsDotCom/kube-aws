@@ -77,12 +77,12 @@ coreos:
 
         [Service]
         Type=simple
+        TimeoutStartSec=60m
         Restart=on-failure
         RestartSec=30
         ExecStartPre=/usr/bin/systemctl is-active kubelet
         ExecStartPre=/usr/bin/systemctl is-active refresh-sa-keys
-        ExecStartPre=/opt/bin/consolidate-sa-tokens.sh
-        ExecStart=/bin/true
+        ExecStart=/opt/bin/consolidate-sa-tokens.sh
 
         [Install]
         WantedBy=multi-user.target
@@ -99,7 +99,7 @@ coreos:
 
         [Service]
         Type=simple
-        TimeoutStartSec=15m
+        TimeoutStartSec=60m
         Restart=on-failure
         RestartSec=30
         ExecStartPre=/usr/bin/systemctl is-active kubelet
