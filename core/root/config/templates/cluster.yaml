@@ -339,6 +339,21 @@ worker:
 #        device: "/dev/xvdf"
 #        path: "/ebs"
 #
+#      # Additional Raid0 EBS backed volumes mounted on the worker
+#      # No additional Raid0 volumes by default. All parameter values do not default - they must be explicitly defined
+#      raid0Mounts:
+#      - type: "gp2"
+#        iops: 0
+#        # size of each device. As below shows 4 devices, total size is 4 * 214G or 896G.
+#        size: 214
+#        # Follow the aws convention of '/dev/xvd*' where '*' is a single letter from 'f' to 'z'
+#        devices:
+#        - "/dev/xvdg"
+#        - "/dev/xvdh"
+#        - "/dev/xvdi"
+#        - "/dev/xvdj"
+#        path: "/data"
+#
 #      # Specifies how often kubelet posts node status to master. Note: be cautious when changing the constant, it must work with nodeMonitorGracePeriod in nodecontroller.
 #      # nodeStatusUpdateFrequency: "10s"
 #
@@ -1133,11 +1148,11 @@ kubernetes:
 #  controllerManager:
 #    resources:
 #      requests:
-#        cpu: 200m
-#        memory: 1G
+#        cpu: 100m
+#        memory: 100M
 #      limits:
-#        cpu: 1
-#        memory: 2G
+#        cpu: 250m
+#        memory: 512M
 
 # Kubernetes Self-hosted networking daemonsets
 # Choose either 'canal' (calico+flannel) or 'flannel'
@@ -1402,6 +1417,10 @@ experimental:
   # This is intended to be used in combination with .controller.iam.role.name. See #297 for more information.
   kiamSupport:
     enabled: false
+    image: 
+      repo: quay.io/uswitch/kiam
+      tag: 2.8
+    server: localhost:443
 
   # When enabled this will install the kube2iam daemon set using the repo from `kube2iamImage`
   # It will also grant sts:assumeRole permission to the IAM role for controller nodes.

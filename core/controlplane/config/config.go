@@ -116,6 +116,11 @@ func NewDefaultCluster() *Cluster {
 			Disk:       "xvdb",
 			Filesystem: "xfs",
 		},
+		KIAMSupport: KIAMSupport{
+			Enabled: false,
+			Image:   model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.8", RktPullDocker: false},
+			Server:  "localhost:443",
+		},
 		Kube2IamSupport: Kube2IamSupport{
 			Enabled: false,
 		},
@@ -221,7 +226,6 @@ func NewDefaultCluster() *Cluster {
 			CalicoCtlImage:                     model.Image{Repo: "quay.io/calico/ctl", Tag: "v1.6.3", RktPullDocker: false},
 			ClusterAutoscalerImage:             model.Image{Repo: "k8s.gcr.io/cluster-autoscaler", Tag: "v1.1.0", RktPullDocker: false},
 			ClusterProportionalAutoscalerImage: model.Image{Repo: "k8s.gcr.io/cluster-proportional-autoscaler-amd64", Tag: "1.1.2", RktPullDocker: false},
-			KIAMImage:                          model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.6", RktPullDocker: false},
 			Kube2IAMImage:                      model.Image{Repo: "jtblin/kube2iam", Tag: "0.9.0", RktPullDocker: false},
 			KubeDnsImage:                       model.Image{Repo: "k8s.gcr.io/k8s-dns-kube-dns-amd64", Tag: "1.14.7", RktPullDocker: false},
 			KubeDnsMasqImage:                   model.Image{Repo: "k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64", Tag: "1.14.7", RktPullDocker: false},
@@ -514,7 +518,6 @@ type DeploymentSettings struct {
 	CalicoKubeControllersImage         model.Image `yaml:"calicoKubeControllersImage,omitempty"`
 	ClusterAutoscalerImage             model.Image `yaml:"clusterAutoscalerImage,omitempty"`
 	ClusterProportionalAutoscalerImage model.Image `yaml:"clusterProportionalAutoscalerImage,omitempty"`
-	KIAMImage                          model.Image `yaml:"kiamImage,omitempty"`
 	Kube2IAMImage                      model.Image `yaml:"kube2iamImage,omitempty"`
 	KubeDnsImage                       model.Image `yaml:"kubeDnsImage,omitempty"`
 	KubeDnsMasqImage                   model.Image `yaml:"kubeDnsMasqImage,omitempty"`
@@ -704,7 +707,9 @@ type EphemeralImageStorage struct {
 }
 
 type KIAMSupport struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled bool        `yaml:"enabled"`
+	Image   model.Image `yaml:"image,omitempty"`
+	Server  string      `yaml:"server,omitempty"`
 }
 
 type Kube2IamSupport struct {
