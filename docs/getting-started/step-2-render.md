@@ -84,7 +84,7 @@ $ kube-aws init \
 --region=us-west-1 \
 --availability-zone=us-west-1c \
 --key-name=key-pair-name \
---kms-key-arn="arn:aws:kms:us-west-1:xxxxxxxxxx:key/xxxxxxxxxxxxxxxxxxx"
+--kms-key-arn="arn:aws:kms:us-west-1:xxxxxxxxxx:key/xxxxxxxxxxxxxxxxxxx" \
 --s3-uri=s3://my-kube-aws-assets-bucket
 ```
 
@@ -349,6 +349,7 @@ This includes the certificate authority, signed server certificates for the Kube
   Additionally, the certificate must have the following Subject Alternative Names (SANs).
   These IPs and DNS names are used within the cluster to route from applications to the Kubernetes API:
 
+    - 127.0.0.1
     - 10.0.0.50
     - 10.3.0.1
     - kubernetes

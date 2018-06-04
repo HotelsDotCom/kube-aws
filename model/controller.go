@@ -13,6 +13,7 @@ type Controller struct {
 	LoadBalancer       ControllerElb       `yaml:"loadBalancer,omitempty"`
 	IAMConfig          IAMConfig           `yaml:"iam,omitempty"`
 	SecurityGroupIds   []string            `yaml:"securityGroupIds"`
+	VolumeMounts       []VolumeMount       `yaml:"volumeMounts,omitempty"`
 	Subnets            Subnets             `yaml:"subnets,omitempty"`
 	CustomFiles        []CustomFile        `yaml:"customFiles,omitempty"`
 	CustomSystemdUnits []CustomSystemdUnit `yaml:"customSystemdUnits,omitempty"`
@@ -52,7 +53,7 @@ func (c Controller) SecurityGroupRefs() []string {
 
 	refs = append(
 		refs,
-		`{"Ref":"SecurityGroupController"}`,
+		`{"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}-ControllerSecurityGroup"}}`,
 	)
 
 	return refs
@@ -69,6 +70,9 @@ func (c Controller) Validate() error {
 			"results in unreliability while scaling nodes out.")
 	}
 	if err := c.IAMConfig.Validate(); err != nil {
+		return err
+	}
+	if err := ValidateVolumeMounts(c.VolumeMounts); err != nil {
 		return err
 	}
 	if len(c.Taints) > 0 {

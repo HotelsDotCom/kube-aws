@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"os"
 
+	"errors"
 	"golang.org/x/crypto/ssh/terminal"
 )
+
+const certificateType = "CERTIFICATE"
 
 func EncodePrivateKeyPEM(key *rsa.PrivateKey) []byte {
 	block := pem.Block{
@@ -52,7 +55,7 @@ func DecodePrivateKeyPEM(data []byte) (*rsa.PrivateKey, error) {
 
 func EncodeCertificatePEM(cert *x509.Certificate) []byte {
 	block := pem.Block{
-		Type:  "CERTIFICATE",
+		Type:  certificateType,
 		Bytes: cert.Raw,
 	}
 	return pem.EncodeToMemory(&block)
@@ -61,4 +64,28 @@ func EncodeCertificatePEM(cert *x509.Certificate) []byte {
 func DecodeCertificatePEM(data []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(data)
 	return x509.ParseCertificate(block.Bytes)
+}
+
+func DecodeCertificatesPEM(data []byte) ([]*x509.Certificate, error) {
+	var block *pem.Block
+	var decodedCerts []byte
+	for {
+		block, data = pem.Decode(data)
+		if block == nil {
+			return nil, errors.New("failed to parse certificate PEM")
+		}
+		// append only certificates
+		if block.Type == certificateType {
+			decodedCerts = append(decodedCerts, block.Bytes...)
+		}
+		if len(data) == 0 {
+			break
+		}
+	}
+	return x509.ParseCertificates(decodedCerts)
+}
+
+func IsCertificatePEM(data []byte) bool {
+	block, _ := pem.Decode(data)
+	return block != nil && block.Type == certificateType
 }

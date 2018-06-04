@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -10,11 +11,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/route53"
 
+	"errors"
 	"github.com/kubernetes-incubator/kube-aws/cfnstack"
 	"github.com/kubernetes-incubator/kube-aws/core/controlplane/config"
+	"github.com/kubernetes-incubator/kube-aws/gzipcompressor"
 	"github.com/kubernetes-incubator/kube-aws/model"
+	"github.com/kubernetes-incubator/kube-aws/naming"
+	"github.com/kubernetes-incubator/kube-aws/netutil"
 	"github.com/kubernetes-incubator/kube-aws/plugin/clusterextension"
 	"github.com/kubernetes-incubator/kube-aws/plugin/pluginmodel"
+	"github.com/kubernetes-incubator/kube-aws/tlscerts"
 )
 
 // VERSION set by build script
@@ -22,18 +28,10 @@ var VERSION = "UNKNOWN"
 
 const STACK_TEMPLATE_FILENAME = "stack.json"
 
-func NewClusterRef(cfg *config.Cluster, awsDebug bool) *ClusterRef {
-	awsConfig := aws.NewConfig().
-		WithRegion(cfg.Region.String()).
-		WithCredentialsChainVerboseErrors(true)
-
-	if awsDebug {
-		awsConfig = awsConfig.WithLogLevel(aws.LogDebug)
-	}
-
+func newClusterRef(cfg *config.Cluster, session *session.Session) *ClusterRef {
 	return &ClusterRef{
 		Cluster: cfg,
-		session: session.New(awsConfig),
+		session: session,
 	}
 }
 
@@ -121,12 +119,24 @@ func (c *ClusterRef) validateExistingVPCState(ec2Svc ec2Service) error {
 	return nil
 }
 
-func NewCluster(cfg *config.Cluster, opts config.StackTemplateOptions, plugins []*pluginmodel.Plugin, awsDebug bool) (*Cluster, error) {
-	clusterRef := NewClusterRef(cfg, awsDebug)
+func NewCluster(cfgRef *config.Cluster, opts config.StackTemplateOptions, plugins []*pluginmodel.Plugin, session *session.Session) (*Cluster, error) {
+	cfg := &config.Cluster{}
+	*cfg = *cfgRef
+
+	// Import all the managed subnets from the network stack
+	var err error
+	cfg.Subnets, err = cfg.Subnets.ImportFromNetworkStackRetainingNames()
+	if err != nil {
+		return nil, fmt.Errorf("failed to import subnets from network stack: %v", err)
+	}
+	cfg.VPC = cfg.VPC.ImportFromNetworkStack()
+	cfg.SetDefaults()
+
+	clusterRef := newClusterRef(cfg, session)
 	// TODO Do this in a cleaner way e.g. in config.go
 	clusterRef.KubeResourcesAutosave.S3Path = model.NewS3Folders(cfg.DeploymentSettings.S3URI, clusterRef.ClusterName).ClusterBackups().Path()
 
-	stackConfig, err := clusterRef.StackConfig(opts, plugins)
+	stackConfig, err := clusterRef.StackConfig(config.ControlPlaneStackName, opts, session, plugins)
 	if err != nil {
 		return nil, err
 	}
@@ -161,14 +171,6 @@ func NewCluster(cfg *config.Cluster, opts config.StackTemplateOptions, plugins [
 		c.StackConfig.Controller.NodeLabels[k] = v
 	}
 
-	extraEtcd, err := extras.Etcd()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load controller node extras from plugins: %v", err)
-	}
-	c.StackConfig.Etcd.CustomSystemdUnits = append(c.StackConfig.Etcd.CustomSystemdUnits, extraEtcd.SystemdUnits...)
-	c.StackConfig.Etcd.CustomFiles = append(c.StackConfig.Etcd.CustomFiles, extraEtcd.Files...)
-	c.StackConfig.Etcd.IAMConfig.Policy.Statements = append(c.StackConfig.Etcd.IAMConfig.Policy.Statements, extraEtcd.IAMPolicyStatements...)
-
 	c.assets, err = c.buildAssets()
 
 	return c, err
@@ -180,27 +182,19 @@ func (c *Cluster) Assets() cfnstack.Assets {
 
 func (c *Cluster) buildAssets() (cfnstack.Assets, error) {
 	var err error
-	assets := cfnstack.NewAssetsBuilder(c.StackName(), c.StackConfig.ClusterExportedStacksS3URI(), c.StackConfig.Region)
+	assets := cfnstack.NewAssetsBuilder(c.StackName, c.StackConfig.ClusterExportedStacksS3URI(), c.StackConfig.Region)
 
 	if c.StackConfig.UserDataController, err = model.NewUserData(c.StackTemplateOptions.ControllerTmplFile, c.StackConfig.Config); err != nil {
 		return nil, fmt.Errorf("failed to render controller cloud config: %v", err)
-	}
-
-	if c.StackConfig.UserDataEtcd, err = model.NewUserData(c.StackTemplateOptions.EtcdTmplFile, c.StackConfig.Config); err != nil {
-		return nil, fmt.Errorf("failed to render etcd cloud config: %v", err)
 	}
 
 	if err = assets.AddUserDataPart(c.UserDataController, model.USERDATA_S3, "userdata-controller"); err != nil {
 		return nil, fmt.Errorf("failed to render controller cloud config: %v", err)
 	}
 
-	if err = assets.AddUserDataPart(c.UserDataEtcd, model.USERDATA_S3, "userdata-etcd"); err != nil {
-		return nil, fmt.Errorf("failed to render etcd cloud config: %v", err)
-	}
-
 	stackTemplate, err := c.RenderStackTemplateAsString()
 	if err != nil {
-		return nil, fmt.Errorf("Error while rendering template: %v", err)
+		return nil, fmt.Errorf("failed to render control-plane template: %v", err)
 	}
 
 	assets.Add(STACK_TEMPLATE_FILENAME, stackTemplate)
@@ -210,7 +204,7 @@ func (c *Cluster) buildAssets() (cfnstack.Assets, error) {
 
 func (c *Cluster) TemplateURL() (string, error) {
 	assets := c.Assets()
-	asset, err := assets.FindAssetByStackAndFileName(c.StackName(), STACK_TEMPLATE_FILENAME)
+	asset, err := assets.FindAssetByStackAndFileName(c.StackName, STACK_TEMPLATE_FILENAME)
 	if err != nil {
 		return "", fmt.Errorf("failed to get template URL: %v", err)
 	}
@@ -219,6 +213,10 @@ func (c *Cluster) TemplateURL() (string, error) {
 
 // ValidateStack validates the CloudFormation stack for this control plane already uploaded to S3
 func (c *Cluster) ValidateStack() (string, error) {
+	if err := c.validateCertsAgainstSettings(); err != nil {
+		return "", err
+	}
+
 	templateURL, err := c.TemplateURL()
 	if err != nil {
 		return "", fmt.Errorf("failed to get template url : %v", err)
@@ -239,7 +237,7 @@ func (c *Cluster) stackProvisioner() *cfnstack.Provisioner {
 }
 `
 	return cfnstack.NewProvisioner(
-		c.StackName(),
+		c.StackName,
 		c.StackTags,
 		c.ClusterExportedStacksS3URI(),
 		c.Region,
@@ -272,12 +270,17 @@ func (c *Cluster) Validate() error {
 	return nil
 }
 
+// NestedStackName returns a sanitized name of this control-plane which is usable as a valid cloudformation nested stack name
+func (c Cluster) NestedStackName() string {
+	return naming.FromStackToCfnResource(config.ControlPlaneStackName)
+}
+
 func (c *Cluster) String() string {
 	return fmt.Sprintf("{Config:%+v}", *c.StackConfig.Config)
 }
 
 func (c *ClusterRef) Destroy() error {
-	return cfnstack.NewDestroyer(c.StackName(), c.session, c.CloudFormation.RoleARN).Destroy()
+	return cfnstack.NewDestroyer(config.ControlPlaneStackName, c.session, c.CloudFormation.RoleARN).Destroy()
 }
 
 func (c *ClusterRef) validateKeyPair(ec2Svc ec2Service) error {
@@ -379,5 +382,43 @@ func (c *ClusterRef) validateControllerRootVolume(ec2Svc ec2Service) error {
 		}
 	}
 
+	return nil
+}
+
+// validateCertsAgainstSettings cross checks that our api server cert is compatible with our cluster settings: -
+// - It must include the externalDNS name for the api servers.
+// - It must include the IPAddress of the first IP in the chosen ServiceCIDR.
+func (c Cluster) validateCertsAgainstSettings() error {
+	apiServerPEM, err := gzipcompressor.DecompressString(c.AssetsConfig.APIServerCert)
+	if err != nil {
+		return fmt.Errorf("could not decompress the apiserver pem: %v", err)
+	}
+
+	apiServerCerts, err := tlscerts.FromBytes([]byte(apiServerPEM))
+	if err != nil {
+		return fmt.Errorf("error parsing api server cert: %v", err)
+	}
+	kubeAPIServerCert, ok := apiServerCerts.GetBySubjectCommonNamePattern("kube-apiserver")
+	if !ok {
+		return errors.New("no api server certs contain Subject CommonName 'kube-apiserver'")
+	}
+
+	// Check DNS Names
+	for _, apiEndPoint := range c.KubeClusterSettings.APIEndpointConfigs {
+		if !kubeAPIServerCert.ContainsDNSName(apiEndPoint.DNSName) {
+			return fmt.Errorf("the apiserver cert does not contain the external dns name %s, please regenerate or resolve", apiEndPoint.DNSName)
+		}
+	}
+
+	// Check IP SANS
+	_, serviceNet, err := net.ParseCIDR(c.ServiceCIDR)
+	if err != nil {
+		return fmt.Errorf("invalid serviceCIDR: %v", err)
+	}
+	kubernetesServiceIPAddr := netutil.IncrementIP(serviceNet.IP)
+
+	if !kubeAPIServerCert.ContainsIPAddress(kubernetesServiceIPAddr) {
+		return fmt.Errorf("the api server cert does not contain the kubernetes service ip address %v, please regenerate or resolve", kubernetesServiceIPAddr)
+	}
 	return nil
 }

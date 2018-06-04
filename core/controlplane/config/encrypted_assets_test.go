@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
-	"github.com/kubernetes-incubator/kube-aws/model"
 	"github.com/kubernetes-incubator/kube-aws/test/helper"
 	"os"
 	"path/filepath"
@@ -53,6 +52,16 @@ func TestTLSGeneration(t *testing.T) {
 			Name:      "apiserver",
 			KeyBytes:  assets.APIServerKey,
 			CertBytes: assets.APIServerCert,
+		},
+		{
+			Name:      "kube-controller-manager",
+			KeyBytes:  assets.KubeControllerManagerKey,
+			CertBytes: assets.KubeControllerManagerCert,
+		},
+		{
+			Name:      "kube-scheduler",
+			KeyBytes:  assets.KubeSchedulerKey,
+			CertBytes: assets.KubeSchedulerCert,
 		},
 		{
 			Name:      "admin",
@@ -112,11 +121,7 @@ func TestTLSGeneration(t *testing.T) {
 
 func TestReadOrCreateCompactAssets(t *testing.T) {
 	helper.WithDummyCredentials(func(dir string) {
-		kmsConfig := KMSConfig{
-			KMSKeyARN:      "keyarn",
-			Region:         model.RegionForName("us-west-1"),
-			EncryptService: &dummyEncryptService{},
-		}
+		kmsConfig := NewKMSConfig("keyarn", &dummyEncryptService{}, nil)
 
 		// See https://github.com/kubernetes-incubator/kube-aws/issues/107
 		t.Run("CachedToPreventUnnecessaryNodeReplacement", func(t *testing.T) {
@@ -156,6 +161,7 @@ func TestReadOrCreateCompactAssets(t *testing.T) {
 			files := []string{
 				"admin-key.pem.enc", "worker-key.pem.enc", "apiserver-key.pem.enc",
 				"etcd-key.pem.enc", "etcd-client-key.pem.enc", "worker-ca-key.pem.enc",
+				"kube-controller-manager-key.pem.enc", "kube-scheduler-key.pem.enc",
 				"kiam-agent-key.pem.enc", "kiam-server-key.pem.enc",
 			}
 
@@ -178,6 +184,8 @@ func TestReadOrCreateCompactAssets(t *testing.T) {
 				{"CACert", original.CACert, regenerated.CACert},
 				{"WorkerCert", original.WorkerCert, regenerated.WorkerCert},
 				{"APIServerCert", original.APIServerCert, regenerated.APIServerCert},
+				{"KubeControllerManagerCert", original.KubeControllerManagerCert, regenerated.KubeControllerManagerCert},
+				{"KubeSchedulerCert", original.KubeSchedulerCert, regenerated.KubeSchedulerCert},
 				{"EtcdClientCert", original.EtcdClientCert, regenerated.EtcdClientCert},
 				{"EtcdCert", original.EtcdCert, regenerated.EtcdCert},
 				{"KIAMAgentCert", original.KIAMAgentCert, regenerated.KIAMAgentCert},
@@ -194,6 +202,8 @@ func TestReadOrCreateCompactAssets(t *testing.T) {
 				{"WorkerCAKey", original.WorkerCAKey, regenerated.WorkerCAKey},
 				{"WorkerKey", original.WorkerKey, regenerated.WorkerKey},
 				{"APIServerKey", original.APIServerKey, regenerated.APIServerKey},
+				{"KubeControllerManagerKey", original.KubeControllerManagerKey, regenerated.KubeControllerManagerKey},
+				{"KubeSchedulerKey", original.KubeSchedulerKey, regenerated.KubeSchedulerKey},
 				{"EtcdClientKey", original.EtcdClientKey, regenerated.EtcdClientKey},
 				{"EtcdKey", original.EtcdKey, regenerated.EtcdKey},
 				{"KIAMAgentKey", original.KIAMAgentKey, regenerated.KIAMAgentKey},
@@ -230,9 +240,9 @@ func TestReadOrCreateUnEncryptedCompactAssets(t *testing.T) {
 
 			if !reflect.DeepEqual(created, read) {
 				t.Errorf(`failed to content unencrypted assets.
- 	unencrypted assets must not change after their first creation but they did change:
- 	created = %v
- 	read = %v`, created, read)
+		unencrypted assets must not change after their first creation but they did change:
+		created = %v
+		read = %v`, created, read)
 			}
 		})
 	}
@@ -249,8 +259,8 @@ func TestReadOrCreateUnEncryptedCompactAssets(t *testing.T) {
 	})
 }
 
-func TestRandomTLSBootstrapTokenString(t *testing.T) {
-	randomToken, err := RandomTLSBootstrapTokenString()
+func TestRandomTokenString(t *testing.T) {
+	randomToken, err := RandomTokenString()
 	if err != nil {
 		t.Errorf("failed to generate a Kubelet bootstrap token: %v", err)
 	}
@@ -258,7 +268,7 @@ func TestRandomTLSBootstrapTokenString(t *testing.T) {
 		t.Errorf("random token not expect to contain a comma: %v", randomToken)
 	}
 
-	b, err := base64.URLEncoding.DecodeString(randomToken)
+	b, err := base64.StdEncoding.DecodeString(randomToken)
 	if err != nil {
 		t.Errorf("failed to decode base64 token string: %v", err)
 	}

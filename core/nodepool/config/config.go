@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	yaml "gopkg.in/yaml.v2"
+	"github.com/go-yaml/yaml"
 
 	"errors"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/kubernetes-incubator/kube-aws/cfnresource"
 	cfg "github.com/kubernetes-incubator/kube-aws/core/controlplane/config"
 	"github.com/kubernetes-incubator/kube-aws/coreos/amiregistry"
 	"github.com/kubernetes-incubator/kube-aws/model"
 	"github.com/kubernetes-incubator/kube-aws/model/derived"
+	"github.com/kubernetes-incubator/kube-aws/naming"
 )
 
 type Ref struct {
@@ -66,10 +68,10 @@ type StackTemplateOptions struct {
 func (c ProvidedConfig) NestedStackName() string {
 	// Convert stack name into something valid as a cfn resource name or
 	// we'll end up with cfn errors like "Template format error: Resource name test5-controlplane is non alphanumeric"
-	return strings.Title(strings.Replace(c.StackName(), "-", "", -1))
+	return naming.FromStackToCfnResource(c.StackName())
 }
 
-func (c ProvidedConfig) StackConfig(opts StackTemplateOptions) (*StackConfig, error) {
+func (c ProvidedConfig) StackConfig(opts StackTemplateOptions, session *session.Session) (*StackConfig, error) {
 	var err error
 	stackConfig := StackConfig{
 		ExtraCfnResources: map[string]interface{}{},
@@ -81,11 +83,8 @@ func (c ProvidedConfig) StackConfig(opts StackTemplateOptions) (*StackConfig, er
 
 	tlsBootstrappingEnabled := c.Experimental.TLSBootstrap.Enabled
 	if stackConfig.ComputedConfig.AssetsEncryptionEnabled() {
-		compactAssets, err := cfg.ReadOrCreateCompactAssets(opts.AssetsDir, c.ManageCertificates, tlsBootstrappingEnabled, false, cfg.KMSConfig{
-			Region:         stackConfig.ComputedConfig.Region,
-			KMSKeyARN:      c.KMSKeyARN,
-			EncryptService: c.ProvidedEncryptService,
-		})
+		kmsConfig := cfg.NewKMSConfig(c.KMSKeyARN, c.ProvidedEncryptService, session)
+		compactAssets, err := cfg.ReadOrCreateCompactAssets(opts.AssetsDir, c.ManageCertificates, tlsBootstrappingEnabled, false, kmsConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -198,17 +197,11 @@ define one or more public subnets in cluster.yaml or explicitly reference privat
 		}
 	}
 
-	// Import all the managed subnets from the main cluster i.e. don't create subnets inside the node pool cfn stack
-	for i, s := range c.Subnets {
-		if !s.HasIdentifier() {
-			stackOutputName := fmt.Sprintf(`{"Fn::ImportValue":{"Fn::Sub":"${ControlPlaneStackName}-%s"}}`, s.LogicalName())
-			az := s.AvailabilityZone
-			if s.Private {
-				c.Subnets[i] = model.NewPrivateSubnetFromFn(az, stackOutputName)
-			} else {
-				c.Subnets[i] = model.NewPublicSubnetFromFn(az, stackOutputName)
-			}
-		}
+	// Import all the managed subnets from the network stack i.e. don't create subnets inside the node pool cfn stack
+	var err error
+	c.Subnets, err = c.Subnets.ImportFromNetworkStack()
+	if err != nil {
+		return fmt.Errorf("failed to import subnets from network stack: %v", err)
 	}
 
 	anySubnetIsManaged := false
@@ -309,7 +302,7 @@ func (c ProvidedConfig) WorkerDeploymentSettings() WorkerDeploymentSettings {
 }
 
 func (c ProvidedConfig) ValidateInputs() error {
-	if err := c.DeploymentSettings.ValidateInputs(); err != nil {
+	if err := c.DeploymentSettings.ValidateInputs(c.NodePoolName); err != nil {
 		return err
 	}
 
@@ -334,7 +327,7 @@ func (c ProvidedConfig) validate() error {
 		return err
 	}
 
-	if err := c.DeploymentSettings.Validate(); err != nil {
+	if err := c.DeploymentSettings.Validate(c.NodePoolName); err != nil {
 		return err
 	}
 
@@ -342,7 +335,7 @@ func (c ProvidedConfig) validate() error {
 		return err
 	}
 
-	if err := c.Experimental.Validate(); err != nil {
+	if err := c.Experimental.Validate(c.NodePoolName); err != nil {
 		return err
 	}
 
@@ -360,7 +353,7 @@ func (c ProvidedConfig) validate() error {
 	}
 
 	if len(c.WorkerNodePoolConfig.IAMConfig.Role.Name) > 0 {
-		if e := cfnresource.ValidateStableRoleNameLength(c.WorkerNodePoolConfig.IAMConfig.Role.Name, c.Region.String()); e != nil {
+		if e := cfnresource.ValidateStableRoleNameLength(c.ClusterName, c.WorkerNodePoolConfig.IAMConfig.Role.Name, c.Region.String()); e != nil {
 			return e
 		}
 	} else {
@@ -393,7 +386,7 @@ func (c ProvidedConfig) VPCRef() (string, error) {
 	// When HasIdentifier returns true, it means the VPC already exists, and we can reference it directly by ID
 	if !c.VPC.HasIdentifier() {
 		// Otherwise import the VPC ID from the control-plane stack
-		igw.IDFromStackOutput = `{"Fn::Sub" : "${ControlPlaneStackName}-VPC"}`
+		igw.IDFromStackOutput = `{"Fn::Sub" : "${NetworkStackName}-VPC"}`
 	}
 	return igw.RefOrError(func() (string, error) {
 		return "", fmt.Errorf("[BUG] Tried to reference VPC by its logical name")
@@ -407,7 +400,7 @@ func (c ProvidedConfig) SecurityGroupRefs() []string {
 		refs,
 		// The security group assigned to worker nodes to allow communication to etcd nodes and controller nodes
 		// which is created and maintained in the main cluster and then imported to node pools.
-		`{"Fn::ImportValue" : {"Fn::Sub" : "${ControlPlaneStackName}-WorkerSecurityGroup"}}`,
+		`{"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}-WorkerSecurityGroup"}}`,
 	)
 
 	return refs

@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-yaml/yaml"
 	"github.com/kubernetes-incubator/kube-aws/plugin/pluginmodel"
-	yaml "gopkg.in/yaml.v2"
 )
 
 /*
@@ -489,7 +489,7 @@ stackTags:
 				S3URI: "s3://test-bucket/foo/bar",
 			}
 
-			cluster, err := NewCluster(clusterConfig, stackTemplateOptions, []*pluginmodel.Plugin{}, false)
+			cluster, err := NewCluster(clusterConfig, stackTemplateOptions, []*pluginmodel.Plugin{}, nil)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -750,11 +750,11 @@ func newDefaultClusterWithDeps(opts config.StackTemplateOptions) (*Cluster, erro
 	cluster.ExternalDNSName = "foo.example.com"
 	cluster.KeyName = "mykey"
 	cluster.S3URI = "s3://mybucket/mydir"
-	cluster.KMSKeyARN = "mykmskey"
+	cluster.KMSKeyARN = "arn:aws:kms:us-west-1:xxxxxxxxx:key/xxxxxxxxxxxxxxxxxxx"
 	if err := cluster.Load(); err != nil {
 		return &Cluster{}, err
 	}
-	return NewCluster(cluster, opts, []*pluginmodel.Plugin{}, false)
+	return NewCluster(cluster, opts, []*pluginmodel.Plugin{}, nil)
 }
 
 func TestRenderStackTemplate(t *testing.T) {
