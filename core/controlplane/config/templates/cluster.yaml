@@ -1340,6 +1340,14 @@ experimental:
   ephemeralImageStorage:
     enabled: false
 
+  # Enabled kiam support and provides overrides to the manifest
+  kiamSupport:
+    enabled: false
+    image: 
+      repo: quay.io/uswitch/kiam
+      tag: 2.8
+    server: localhost:443
+
   # When enabled it will grant sts:assumeRole permission to the IAM role for controller nodes.
   # This is intended to be used in combination with .controller.managedIamRoleName. See #297 for more information.
   kube2IamSupport:
