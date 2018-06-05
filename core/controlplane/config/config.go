@@ -768,6 +768,16 @@ type Networking struct {
 	SelfHosting SelfHosting `yaml:"selfHosting"`
 }
 
+type ComputeResources struct {
+	Requests ResourceQuota `yaml:"requests,omitempty"`
+	Limits   ResourceQuota `yaml:"limits,omitempty"`
+}
+
+type ResourceQuota struct {
+	Cpu    string `yaml:"cpu"`
+	Memory string `yaml:"memory"`
+}
+
 type SelfHosting struct {
 	Enabled         bool        `yaml:"enabled"`
 	Type            string      `yaml:"type"`
@@ -834,8 +844,10 @@ func (c *KubeDns) MergeIfEmpty(other KubeDns) {
 }
 
 type KubernetesDashboard struct {
-	AdminPrivileges bool `yaml:"adminPrivileges"`
-	InsecureLogin   bool `yaml:"insecureLogin"`
+	AdminPrivileges  bool             `yaml:"adminPrivileges"`
+	InsecureLogin    bool             `yaml:"insecureLogin"`
+	Enabled          bool             `yaml:"enabled"`
+	ComputeResources ComputeResources `yaml:"resources,omitempty"`
 }
 
 type WaitSignal struct {
