@@ -57,9 +57,15 @@ func withDummyCredentials(alsoWriteCAKey bool, fn func(dir string)) {
 	// config/temp, nodepool/config/temp, test/integration/temp
 	defer os.RemoveAll(dir)
 
-{{/* RUN-578 Introduce Dex */}}
+	{
+		{ /* RUN-578 Introduce Dex */
+		}
+	}
 	for _, pairName := range []string{"ca", "apiserver", "worker", "admin", "etcd", "etcd-client", "oidc", "kiam-agent", "kiam-server"} {
-{{/* RUN-578 Introduce Dex */}}
+		{
+			{ /* RUN-578 Introduce Dex */
+			}
+		}
 		certFile := fmt.Sprintf("%s/%s.pem", dir, pairName)
 		if err := ioutil.WriteFile(certFile, []byte(dummyCert), 0644); err != nil {
 			panic(err)

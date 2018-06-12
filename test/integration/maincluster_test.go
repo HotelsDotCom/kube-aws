@@ -135,7 +135,9 @@ func TestMainClusterConfig(t *testing.T) {
 				Filesystem: "xfs",
 			},
 			KIAMSupport: controlplane_config.KIAMSupport{
-				Enabled: false,
+				Enabled:         false,
+				Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.7", RktPullDocker: false},
+				ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost:443", AgentAddress: "kiam-server:443"},
 			},
 			Kube2IamSupport: controlplane_config.Kube2IamSupport{
 				Enabled: false,
@@ -1368,7 +1370,9 @@ worker:
 							Filesystem: "xfs",
 						},
 						KIAMSupport: controlplane_config.KIAMSupport{
-							Enabled: true,
+							Enabled:         false,
+							Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.7", RktPullDocker: false},
+							ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost:443", AgentAddress: "kiam-server:443"},
 						},
 						Kube2IamSupport: controlplane_config.Kube2IamSupport{
 							Enabled: true,
@@ -1553,7 +1557,68 @@ worker:
 					if !reflect.DeepEqual(expectedTaints, actualTaints) {
 						t.Errorf("worker node taints didn't match: expected=%v, actual=%v", expectedTaints, actualTaints)
 					}
+				},
+			},
+		},
+		{
+			context: "WithExperimentalFeatureKiam",
+			configYaml: minimalValidConfigYaml + `
+experimental:
+  kiamSupport:
+    enabled: true
+    image:
+      repo: quay.io/uswitch/kiam
+      tag: v2.6
+    serverAddresses:
+      serverAddress: localhost
+      agentAddress: kiam-server
+worker:
+  nodePools:
+  - name: pool1
+`,
+			assertConfig: []ConfigTester{
+				func(c *config.Config, t *testing.T) {
+					expected := controlplane_config.KIAMSupport{
+						Enabled:         true,
+						Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.6", RktPullDocker: false},
+						ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost", AgentAddress: "kiam-server"},
+					}
 
+					actual := c.Experimental
+
+					if !reflect.DeepEqual(expected, actual.KIAMSupport) {
+						t.Errorf("experimental settings didn't match : expected=%+v actual=%+v", expected, actual)
+					}
+
+					p := c.NodePools[0]
+					if reflect.DeepEqual(expected, p.Experimental.KIAMSupport) {
+						t.Errorf("experimental settings shouldn't be inherited to a node pool but it did : toplevel=%v nodepool=%v", expected, p.Experimental)
+					}
+				},
+			},
+		},
+		{
+			context: "WithExperimentalFeatureKiamForWorkerNodePool",
+			configYaml: minimalValidConfigYaml + `
+worker:
+  nodePools:
+  - name: pool1
+    kiamSupport:
+      enabled: true
+`,
+			assertConfig: []ConfigTester{
+				func(c *config.Config, t *testing.T) {
+					expected := controlplane_config.Experimental{
+						KIAMSupport: controlplane_config.KIAMSupport{
+							Enabled:         true,
+							Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.7", RktPullDocker: false},
+							ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost:443", AgentAddress: "kiam-server:443"},
+						},
+					}
+					p := c.NodePools[0]
+					if reflect.DeepEqual(expected, p.Experimental) {
+						t.Errorf("experimental settings for node pool didn't match : expected=%v actual=%v", expected, p.Experimental)
+					}
 				},
 			},
 		},

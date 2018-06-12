@@ -160,11 +160,7 @@ func TestReadOrCreateCompactAssets(t *testing.T) {
 
 			files := []string{
 				"admin-key.pem.enc", "worker-key.pem.enc", "apiserver-key.pem.enc",
-<<<<<<< HEAD
 				"etcd-key.pem.enc", "etcd-client-key.pem.enc", "worker-ca-key.pem.enc", "oidc", "oidc-key",
-=======
-				"etcd-key.pem.enc", "etcd-client-key.pem.enc", "worker-ca-key.pem.enc",
->>>>>>> upstream/master
 				"kiam-agent-key.pem.enc", "kiam-server-key.pem.enc",
 			}
 
