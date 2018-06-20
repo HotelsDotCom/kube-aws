@@ -5876,7 +5876,7 @@ write_files:
       }
 
       kubectl() {
-        docker run --rm -i --net=host -v /tmp/sakey:/tmp/sakey -v /etc/kubernetes:/etc/kubernetes:ro -v /etc/resolv.conf:/etc/resolv.conf:ro k8s.gcr.io/hyperkube-amd64:v1.9.3 /kubectl "$@"
+        docker run --rm -i --net=host -v /tmp/sakey:/tmp/sakey -v /etc/kubernetes:/etc/kubernetes:ro -v /etc/resolv.conf:/etc/resolv.conf:ro {{.HyperkubeImage.RepoWithTag}} /kubectl "$@"
       }
 
       refresh_token() {
