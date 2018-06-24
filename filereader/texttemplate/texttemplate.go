@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"text/template"
 
+	"github.com/Masterminds/semver"
 	"github.com/Masterminds/sprig"
 	"github.com/kubernetes-incubator/kube-aws/fingerprint"
 )
@@ -41,6 +42,36 @@ var funcs2 = template.FuncMap{
 	"toLabel": func(data string) string {
 		reg := regexp.MustCompile("[^a-z0-9A-Z_.-]")
 		return reg.ReplaceAllString(data, "_")
+	},
+	"EbsOptimized": func(instanceType string) bool {
+		// Amazon instance series that do not support EBS optimize
+		nonSupportedSeries := map[string]bool{"t1": true, "t2": true}
+		// Amazon instance types that do not support EBS optimize
+		nonSupportedTypes := map[string]bool{
+			"c1.medium": true,
+			"c3.large":  true, "c3.8xlarge": true,
+			"cc2.8xlarge": true,
+			"cr1.8xlarge": true,
+			"g2.8xlarge":  true,
+			"i2.8xlarge":  true,
+			"m1.small":    true, "m1.medium": true,
+			"m2.xlarge": true,
+			"m3.medium": true, "m3.large": true,
+			"r3.large": true, "r3.8xlarge": true}
+		series := strings.Split(instanceType, ".")
+
+		return !nonSupportedSeries[series[0]] && !nonSupportedTypes[instanceType]
+	},
+	"checkVersion": func(constraint string, versionToCheck string) (bool, error) {
+		c, err := semver.NewConstraint(constraint)
+		if err != nil {
+			return false, err
+		}
+		v, err := semver.NewVersion(versionToCheck)
+		if err != nil {
+			return false, err
+		}
+		return c.Check(v), nil
 	},
 }
 
