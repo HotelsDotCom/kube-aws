@@ -1375,7 +1375,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -1385,7 +1385,7 @@ write_files:
                 - mountPath: /etc/kubernetes/cni/net.d
                   name: cni-net-dir
               - name: net-migration
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/touch
                 - /etc/kubernetes/cni/net.d/net-migration
@@ -1598,7 +1598,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -1608,7 +1608,7 @@ write_files:
                 - mountPath: /etc/kubernetes/cni/net.d
                   name: cni-net-dir
               - name: net-migration
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/touch
                 - /etc/kubernetes/cni/net.d/net-migration
@@ -2106,7 +2106,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -2116,7 +2116,7 @@ write_files:
                 - mountPath: /etc/kubernetes/cni/net.d
                   name: cni-net-dir
               - name: net-migration
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/touch
                 - /etc/kubernetes/cni/net.d/net-migration
@@ -2271,7 +2271,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -5055,7 +5055,7 @@ write_files:
 
         log "Running a pod on node ${node} to determine pod ip address..."
         local selector="{ \"apiVersion\": \"v1\", \"spec\": { \"nodeSelector\": { \"kubernetes.io/hostname\": \"${node}\" }, \"tolerations\": [ { \"effect\": \"NoSchedule\", \"operator\": \"Exists\" }, { \"effect\": \"NoExecute\", \"operator\": \"Exists\" } ] } }"
-        ipaddress=$(kubectl -n kube-system run find-pod-ip-${node%%.*} --pod-running-timeout=1m -i -t --image=alpine:latest --restart=Never --overrides="${selector}" -- /bin/sh -c "cat /proc/net/fib_trie | awk '/32 host/ {print f} {f=\$2}' | grep -v 127.0.0.1 | uniq") || return 1
+        ipaddress=$(kubectl -n kube-system run find-pod-ip-${node%%.*} --pod-running-timeout=1m -i -t --image={{.HyperkubeImage.RepoWithTag}} --restart=Never --overrides="${selector}" -- /bin/sh -c "cat /proc/net/fib_trie | awk '/32 host/ {print f} {f=\$2}' | grep -v 127.0.0.1 | uniq") || return 1
         kubectl -n kube-system delete pod find-pod-ip-${node%%.*} 2>&1 >/dev/null
 
         if [[ -n "${ipaddress}" ]]; then
