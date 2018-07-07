@@ -3272,6 +3272,16 @@ write_files:
 {{/* RUN Attempt to prevent apiserver->etcd lockups. https://github.com/kubernetes/kubernetes/issues/47131#issuecomment-338166775 */}}
           - --service-account-lookup=false
 {{/* RUN Attempt to prevent apiserver->etcd lockups. https://github.com/kubernetes/kubernetes/issues/47131#issuecomment-338166775 */}}
+          {{ if .Addons.APIServerAggregator.Enabled -}}
+          - --requestheader-client-ca-file=/etc/kubernetes/ssl/ca.pem
+          - --requestheader-allowed-names=aggregator
+          - --requestheader-extra-headers-prefix=X-Remote-Extra-
+          - --requestheader-group-headers=X-Remote-Group
+          - --requestheader-username-headers=X-Remote-User
+          - --enable-aggregator-routing=false
+          - --proxy-client-cert-file=/etc/kubernetes/ssl/apiserver-aggregator.pem
+          - --proxy-client-key-file=/etc/kubernetes/ssl/apiserver-aggregator-key.pem
+          {{ end -}}
           {{range $f := .APIServerFlags}}
           - --{{$f.Name}}={{$f.Value}}
           {{ end -}}
@@ -4029,8 +4039,8 @@ write_files:
                 - --requestheader-extra-headers-prefix=X-Remote-Extra
                 resources:
                   limits:
-                    cpu: 80m
-                    memory: 200Mi
+                    cpu: 500m
+                    memory: 512Mi
                   requests:
                     cpu: 80m
                     memory: 200Mi
@@ -4627,6 +4637,16 @@ write_files:
   - path: /etc/kubernetes/ssl/service-account-key.pem{{if .AssetsEncryptionEnabled}}.enc{{end}}
     encoding: gzip+base64
     content: {{.AssetsConfig.ServiceAccountKey}}
+
+  {{ if .Addons.APIServerAggregator.Enabled -}}
+  - path: /etc/kubernetes/ssl/apiserver-aggregator.pem
+    encoding: gzip+base64
+    content: {{.AssetsConfig.APIServerAggregatorCert}}
+
+  - path: /etc/kubernetes/ssl/apiserver-aggregator-key.pem{{if .AssetsEncryptionEnabled}}.enc{{end}}
+    encoding: gzip+base64
+    content: {{.AssetsConfig.APIServerAggregatorKey}}
+  {{ end -}}
 {{ end }}
 
   # File needed on every node (used by the kube-proxy DaemonSet), including controllers

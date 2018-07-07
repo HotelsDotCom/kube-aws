@@ -418,6 +418,31 @@ func (c *Cluster) SetDefaults() error {
 		return fmt.Errorf("You can not mix private and public subnets for etcd nodes. Please explicitly configure etcd.subnets[] to contain either public or private subnets only")
 	}
 
+	if c.ExternalDNSName != "" {
+		// TODO: Deprecate externalDNSName?
+
+		if len(c.APIEndpointConfigs) != 0 {
+			return errors.New("invalid cluster: you can only specify either externalDNSName or apiEndpoints, but not both")
+		}
+
+		subnetRefs := []model.SubnetReference{}
+		for _, s := range c.Controller.LoadBalancer.Subnets {
+			subnetRefs = append(subnetRefs, model.SubnetReference{Name: s.Name})
+		}
+
+		c.APIEndpointConfigs = model.NewDefaultAPIEndpoints(
+			c.ExternalDNSName,
+			subnetRefs,
+			c.HostedZoneID,
+			c.RecordSetTTL,
+			c.Controller.LoadBalancer.Private,
+		)
+	}
+
+	if c.Addons.MetricsServer.Enabled {
+		c.Addons.APIServerAggregator.Enabled = true
+	}
+
 	return nil
 }
 

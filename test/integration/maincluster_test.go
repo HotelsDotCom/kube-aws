@@ -450,6 +450,9 @@ worker:
 						MetricsServer: model.MetricsServer{
 							Enabled: true,
 						},
+						APIServerAggregator: model.APIServerAggregator{
+							Enabled: true,
+						},
 					}
 
 					actual := c.Addons
