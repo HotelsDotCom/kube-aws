@@ -66,7 +66,7 @@ func newDefaultUnmarshalledConfig() *UnmarshalledConfig {
 
 func ConfigFromBytes(data []byte, plugins []*pluginmodel.Plugin) (*Config, error) {
 	c := newDefaultUnmarshalledConfig()
-	if err := yaml.Unmarshal(data, c); err != nil {
+	if err := yaml.UnmarshalStrict(data, c); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
 	c.HyperkubeImage.Tag = c.K8sVer
