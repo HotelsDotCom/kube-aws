@@ -1298,10 +1298,10 @@ experimental:
       - sg-12345678
   oidc:
     enabled: true
-    oidc-issuer-url: "https://accounts.google.com"
-    oidc-client-id: "kubernetes"
-    oidc-username-claim: "email"
-    oidc-groups-claim: "groups"
+    issuerUrl: "https://accounts.google.com"
+    clientId: "kubernetes"
+    usernameClaim: "email"
+    groupsClaim: "groups"
   nodeDrainer:
     enabled: true
     drainTimeout: 3
@@ -1460,8 +1460,8 @@ worker:
         enabled: true
     auditLog:
       enabled: true
-      maxage: 100
-      logpath: "/var/log/audit.log"
+      maxAge: 100
+      logPath: "/var/log/audit.log"
     awsEnvironment:
       enabled: true
       environment:
