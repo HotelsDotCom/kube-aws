@@ -1017,19 +1017,6 @@ kubernetes:
 				},
 			},
 		},
-		{
-			conf: `
-# Settings for an experimental feature must be under the "experimental" field. Ignored.
-kubernetes:
-  encryptionAtRest:
-    enabled: true
-`,
-			kubernetes: Kubernetes{
-				EncryptionAtRest: EncryptionAtRest{
-					Enabled: true,
-				},
-			},
-		},
 	}
 
 	for _, conf := range validConfigs {
@@ -1136,17 +1123,6 @@ func TestKubeletReserved(t *testing.T) {
 		{
 			conf: `
 kubelet:
-  kubeReserved: "cpu=100m,memory=100Mi,storage=1Gi"
-  systemReserved: "cpu=200m,memory=200Mi,storage=2Gi"
-`,
-			kubelet: Kubelet{
-				KubeReservedResources:   "cpu=100m,memory=100Mi,storage=1Gi",
-				SystemReservedResources: "cpu=200m,memory=200Mi,storage=2Gi",
-			},
-		},
-		{
-			conf: `
-kubelet:			
   kubeReserved: "cpu=100m,memory=100Mi,storage=1Gi"
   systemReserved: "cpu=200m,memory=200Mi,storage=2Gi"
 `,
@@ -1293,17 +1269,6 @@ experimental:
 		},
 		{
 			conf: `
-experimental:
-  tlsBootstrap:
-    enabled: true
-`,
-			tlsBootstrap: TLSBootstrap{
-				Enabled: true,
-			},
-		},
-		{
-			conf: `
-# Settings for an experimental feature must be under the "experimental" field. Ignored.
 experimental:
   tlsBootstrap:
     enabled: true
