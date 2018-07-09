@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
-	"github.com/go-yaml/yaml"
 	"testing"
+
+	"github.com/go-yaml/yaml"
 )
 
 func TestCIDRRangesExtractFromYAML(t *testing.T) {
@@ -11,7 +12,7 @@ func TestCIDRRangesExtractFromYAML(t *testing.T) {
 		rs := struct {
 			CIDRRanges `yaml:"rs"`
 		}{DefaultCIDRRanges()}
-		err := yaml.Unmarshal([]byte("rs:\n- \"1.2.3.255/32\"\n"), &rs)
+		err := yaml.UnmarshalStrict([]byte("rs:\n- \"1.2.3.255/32\"\n"), &rs)
 		if err != nil {
 			t.Errorf("failed ot extract CIDR ranges from yaml: %v", err)
 			t.FailNow()
@@ -26,7 +27,7 @@ func TestCIDRRangesExtractFromYAML(t *testing.T) {
 		rs := struct {
 			CIDRRanges `yaml:"rs"`
 		}{DefaultCIDRRanges()}
-		err := yaml.Unmarshal([]byte("rs:\n"), &rs)
+		err := yaml.UnmarshalStrict([]byte("rs:\n"), &rs)
 		if err != nil {
 			t.Errorf("failed ot extract CIDR ranges from yaml: %v", err)
 			t.FailNow()
@@ -39,7 +40,7 @@ func TestCIDRRangesExtractFromYAML(t *testing.T) {
 		rs := struct {
 			CIDRRanges `yaml:"rs"`
 		}{DefaultCIDRRanges()}
-		err := yaml.Unmarshal([]byte(""), &rs)
+		err := yaml.UnmarshalStrict([]byte(""), &rs)
 		if err != nil {
 			t.Errorf("failed ot extract CIDR ranges from yaml: %v", err)
 			t.FailNow()
@@ -54,7 +55,7 @@ func TestCIDRRangesExtractFromYAML(t *testing.T) {
 
 func TestCIDRRangeExtractFromYAML(t *testing.T) {
 	r := CIDRRange{}
-	err := yaml.Unmarshal([]byte("\"0.0.0.0/0\""), &r)
+	err := yaml.UnmarshalStrict([]byte("\"0.0.0.0/0\""), &r)
 	if err != nil {
 		t.Errorf("failed to extract CIDR range from yaml: %v", err)
 	}
