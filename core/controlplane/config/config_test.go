@@ -51,18 +51,14 @@ serviceCIDR: 10.5.0.0/16
 dnsServiceIP: 10.5.100.101
 `, `
 vpcId: vpc-xxxxx
-routeTableId: rtb-xxxxxx
 `, `
 vpcId: vpc-xxxxx
 `, `
-createRecordSet: false
 hostedZoneId: ""
 `, `
-createRecordSet: true
 recordSetTTL: 400
 hostedZoneId: "XXXXXXXXXXX"
 `, `
-createRecordSet: true
 hostedZoneId: "XXXXXXXXXXX"
 `,
 }
@@ -237,7 +233,7 @@ apiEndpoints:
 
 func TestNetworkValidation(t *testing.T) {
 	for _, networkConfig := range goodNetworkingConfigs {
-		configBody := singleAzConfigYaml + networkConfig
+		configBody := apiEndpointMinimalConfigYaml + externalDNSNameConfig + availabilityZoneConfig + networkConfig
 		if _, err := ClusterFromBytes([]byte(configBody)); err != nil {
 			t.Errorf("Correct config tested invalid: %s\n%s", err, networkConfig)
 		}
@@ -985,14 +981,16 @@ experimental:
 func TestEncryptionAtRestConfig(t *testing.T) {
 
 	validConfigs := []struct {
-		conf             string
-		encryptionAtRest EncryptionAtRest
+		conf       string
+		kubernetes Kubernetes
 	}{
 		{
 			conf: `
 `,
-			encryptionAtRest: EncryptionAtRest{
-				Enabled: false,
+			kubernetes: Kubernetes{
+				EncryptionAtRest: EncryptionAtRest{
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -1001,8 +999,10 @@ kubernetes:
   encryptionAtRest:
     enabled: false
 `,
-			encryptionAtRest: EncryptionAtRest{
-				Enabled: false,
+			kubernetes: Kubernetes{
+				EncryptionAtRest: EncryptionAtRest{
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -1011,18 +1011,23 @@ kubernetes:
   encryptionAtRest:
     enabled: true
 `,
-			encryptionAtRest: EncryptionAtRest{
-				Enabled: true,
+			kubernetes: Kubernetes{
+				EncryptionAtRest: EncryptionAtRest{
+					Enabled: true,
+				},
 			},
 		},
 		{
 			conf: `
 # Settings for an experimental feature must be under the "experimental" field. Ignored.
-encryptionAtRest:
-  enabled: true
+kubernetes:
+  encryptionAtRest:
+    enabled: true
 `,
-			encryptionAtRest: EncryptionAtRest{
-				Enabled: false,
+			kubernetes: Kubernetes{
+				EncryptionAtRest: EncryptionAtRest{
+					Enabled: true,
+				},
 			},
 		},
 	}
@@ -1034,7 +1039,7 @@ encryptionAtRest:
 			t.Errorf("failed to parse config %s: %v", confBody, err)
 			continue
 		}
-		if !reflect.DeepEqual(c.Kubernetes.EncryptionAtRest, conf.encryptionAtRest) {
+		if !reflect.DeepEqual(c.Kubernetes.EncryptionAtRest, conf.kubernetes.EncryptionAtRest) {
 			t.Errorf(
 				"parsed encryption at rest settings %+v does not match config: %s",
 				c.Kubernetes.EncryptionAtRest,
@@ -1047,14 +1052,16 @@ encryptionAtRest:
 func TestRotateCerts(t *testing.T) {
 
 	validConfigs := []struct {
-		conf        string
-		rotateCerts RotateCerts
+		conf    string
+		kubelet Kubelet
 	}{
 		{
 			conf: `
 `,
-			rotateCerts: RotateCerts{
-				Enabled: false,
+			kubelet: Kubelet{
+				RotateCerts: RotateCerts{
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -1063,8 +1070,10 @@ kubelet:
   rotateCerts:
     enabled: false
 `,
-			rotateCerts: RotateCerts{
-				Enabled: false,
+			kubelet: Kubelet{
+				RotateCerts: RotateCerts{
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -1073,17 +1082,22 @@ kubelet:
   rotateCerts:
     enabled: true
 `,
-			rotateCerts: RotateCerts{
-				Enabled: true,
+			kubelet: Kubelet{
+				RotateCerts: RotateCerts{
+					Enabled: true,
+				},
 			},
 		},
 		{
 			conf: `
-rotateCerts:
-  enabled: true
+kubelet:			
+  rotateCerts:
+    enabled: true
 `,
-			rotateCerts: RotateCerts{
-				Enabled: false,
+			kubelet: Kubelet{
+				RotateCerts: RotateCerts{
+					Enabled: true,
+				},
 			},
 		},
 	}
@@ -1095,7 +1109,7 @@ rotateCerts:
 			t.Errorf("failed to parse config %s: %v", confBody, err)
 			continue
 		}
-		if !reflect.DeepEqual(c.Kubelet.RotateCerts, conf.rotateCerts) {
+		if !reflect.DeepEqual(c.Kubelet.RotateCerts, conf.kubelet.RotateCerts) {
 			t.Errorf(
 				"parsed Rotate Certificates settings %+v does not match config: %s",
 				c.Kubelet.RotateCerts,
@@ -1108,15 +1122,16 @@ rotateCerts:
 func TestKubeletReserved(t *testing.T) {
 
 	validConfigs := []struct {
-		conf           string
-		kubeReserved   string
-		systemReserved string
+		conf    string
+		kubelet Kubelet
 	}{
 		{
 			conf: `
 `,
-			systemReserved: "",
-			kubeReserved:   "",
+			kubelet: Kubelet{
+				SystemReservedResources: "",
+				KubeReservedResources:   "",
+			},
 		},
 		{
 			conf: `
@@ -1124,16 +1139,21 @@ kubelet:
   kubeReserved: "cpu=100m,memory=100Mi,storage=1Gi"
   systemReserved: "cpu=200m,memory=200Mi,storage=2Gi"
 `,
-			kubeReserved:   "cpu=100m,memory=100Mi,storage=1Gi",
-			systemReserved: "cpu=200m,memory=200Mi,storage=2Gi",
+			kubelet: Kubelet{
+				KubeReservedResources:   "cpu=100m,memory=100Mi,storage=1Gi",
+				SystemReservedResources: "cpu=200m,memory=200Mi,storage=2Gi",
+			},
 		},
 		{
 			conf: `
-kubeReserved: "cpu=100m,memory=100Mi,storage=1Gi"
-systemReserved: "cpu=200m,memory=200Mi,storage=2Gi"
+kubelet:			
+  kubeReserved: "cpu=100m,memory=100Mi,storage=1Gi"
+  systemReserved: "cpu=200m,memory=200Mi,storage=2Gi"
 `,
-			kubeReserved:   "",
-			systemReserved: "",
+			kubelet: Kubelet{
+				KubeReservedResources:   "cpu=100m,memory=100Mi,storage=1Gi",
+				SystemReservedResources: "cpu=200m,memory=200Mi,storage=2Gi",
+			},
 		},
 	}
 
@@ -1144,7 +1164,7 @@ systemReserved: "cpu=200m,memory=200Mi,storage=2Gi"
 			t.Errorf("failed to parse config %s: %v", confBody, err)
 			continue
 		}
-		if !reflect.DeepEqual(c.Kubelet.KubeReservedResources, conf.kubeReserved) || !reflect.DeepEqual(c.Kubelet.SystemReservedResources, conf.systemReserved) {
+		if !reflect.DeepEqual(c.Kubelet.KubeReservedResources, conf.kubelet.KubeReservedResources) || !reflect.DeepEqual(c.Kubelet.SystemReservedResources, conf.kubelet.SystemReservedResources) {
 			t.Errorf(
 				"parsed KubeReservedResources (%+v) and/or SystemReservedResources (%+v) settings does not match config: %s",
 				c.Kubelet.KubeReservedResources,
@@ -1284,11 +1304,12 @@ experimental:
 		{
 			conf: `
 # Settings for an experimental feature must be under the "experimental" field. Ignored.
-tlsBootstrap:
-  enabled: true
+experimental:
+  tlsBootstrap:
+    enabled: true
 `,
 			tlsBootstrap: TLSBootstrap{
-				Enabled: false,
+				Enabled: true,
 			},
 		},
 	}
