@@ -20,7 +20,7 @@ unknownKey1: unusedValue1
 unknownKey2: unusedValue2
 `
 		c := fakeConfig{}
-		yamlErr := yaml.Unmarshal([]byte(data), &c)
+		yamlErr := yaml.UnmarshalStrict([]byte(data), &c)
 		if yamlErr != nil {
 			t.Errorf("bug in test! %v", yamlErr)
 			t.FailNow()
@@ -41,7 +41,7 @@ unknownKey1: unusedValue1
 unknownKey2: unusedValue2
 `
 		c := fakeConfig{}
-		yamlErr := yaml.Unmarshal([]byte(data), &c)
+		yamlErr := yaml.UnmarshalStrict([]byte(data), &c)
 		if yamlErr != nil {
 			t.Errorf("bug in test! %v", yamlErr)
 			t.FailNow()
@@ -60,7 +60,7 @@ unknownKey2: unusedValue2
 		data := `name: myname
 `
 		c := fakeConfig{}
-		yamlErr := yaml.Unmarshal([]byte(data), &c)
+		yamlErr := yaml.UnmarshalStrict([]byte(data), &c)
 		if yamlErr != nil {
 			t.Errorf("bug in test! %v", yamlErr)
 			t.FailNow()
