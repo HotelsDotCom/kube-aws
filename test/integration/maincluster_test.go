@@ -3745,11 +3745,23 @@ etcdDataVolumeEncrypted: true
 		},
 		{
 			context: "WithAwsNodeLabelEnabledForTooLongClusterNameAndPoolName",
-			configYaml: minimalValidConfigYaml + `
+			configYaml: `
 # clusterName + nodePools[].name should be less than or equal to 25 characters or the launch configuration name
 # "mykubeawsclustername-mynestedstackname-1N2C4K3LLBEDZ-WorkersLC-BC2S9P3JG2QD" exceeds the limit of 63 characters
 # See https://kubernetes.io/docs/user-guide/labels/#syntax-and-character-set
 clusterName: my-cluster1 # 11 characters
+keyName: "test-key-name"
+s3URI: "s3://mybucket/mydir"
+kmsKeyArn: "arn:aws:kms:us-west-1:xxxxxxxxx:key/xxxxxxxxxxxxxxxxxxx"
+region: "us-west-1"
+
+availabilityZone: us-west-1c
+apiEndpoints:
+- name: public
+  dnsName: "test.staging.core-os.net"
+  loadBalancer:
+    hostedZone:
+      id: hostedzone-xxxx
 worker:
   nodePools:
   - name: workernodepool1 # 15 characters
@@ -3760,11 +3772,23 @@ worker:
 		},
 		{
 			context: "WithAwsNodeLabelEnabledForTooLongClusterName",
-			configYaml: minimalValidConfigYaml + `
+			configYaml: `
 # clusterName should be less than or equal to 21 characters or the launch configuration name
 # "mykubeawsclustername-mynestedstackname-1N2C4K3LLBEDZ-ControllersLC-BC2S9P3JG2QD" exceeds the limit of 63 characters
 # See https://kubernetes.io/docs/user-guide/labels/#syntax-and-character-set
 clusterName: mycluster # 9
+keyName: "test-key-name"
+s3URI: "s3://mybucket/mydir"
+kmsKeyArn: "arn:aws:kms:us-west-1:xxxxxxxxx:key/xxxxxxxxxxxxxxxxxxx"
+region: "us-west-1"
+
+availabilityZone: us-west-1c
+apiEndpoints:
+- name: public
+  dnsName: "test.staging.core-os.net"
+  loadBalancer:
+    hostedZone:
+      id: hostedzone-xxxx
 experimental:
   awsNodeLabels:
      enabled: true
