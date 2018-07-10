@@ -139,6 +139,7 @@ func TestMainClusterConfig(t *testing.T) {
 			KIAMSupport: controlplane_config.KIAMSupport{
 				Enabled:         false,
 				Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.7", RktPullDocker: false},
+				SessionDuration: "15m",
 				ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost:443", AgentAddress: "kiam-server:443"},
 			},
 			Kube2IamSupport: controlplane_config.Kube2IamSupport{
@@ -449,6 +450,9 @@ worker:
 							Enabled: true,
 						},
 						MetricsServer: model.MetricsServer{
+							Enabled: true,
+						},
+						APIServerAggregator: model.APIServerAggregator{
 							Enabled: true,
 						},
 					}
@@ -1378,6 +1382,7 @@ worker:
 						KIAMSupport: controlplane_config.KIAMSupport{
 							Enabled:         false,
 							Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.7", RktPullDocker: false},
+							SessionDuration: "15m",
 							ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost:443", AgentAddress: "kiam-server:443"},
 						},
 						Kube2IamSupport: controlplane_config.Kube2IamSupport{
@@ -1575,6 +1580,7 @@ experimental:
     image:
       repo: quay.io/uswitch/kiam
       tag: v2.6
+    sessionDuration: 30m	
     serverAddresses:
       serverAddress: localhost
       agentAddress: kiam-server
@@ -1587,6 +1593,7 @@ worker:
 					expected := controlplane_config.KIAMSupport{
 						Enabled:         true,
 						Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.6", RktPullDocker: false},
+						SessionDuration: "30m",
 						ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost", AgentAddress: "kiam-server"},
 					}
 
@@ -1618,6 +1625,7 @@ worker:
 						KIAMSupport: controlplane_config.KIAMSupport{
 							Enabled:         true,
 							Image:           model.Image{Repo: "quay.io/uswitch/kiam", Tag: "v2.7", RktPullDocker: false},
+							SessionDuration: "15m",
 							ServerAddresses: controlplane_config.KIAMServerAddresses{ServerAddress: "localhost:443", AgentAddress: "kiam-server:443"},
 						},
 					}
@@ -3489,7 +3497,7 @@ worker:
 			configBytes := validCase.configYaml
 			// TODO Allow including plugins in test data?
 			plugins := []*pluginmodel.Plugin{}
-			providedConfig, err := config.ConfigFromBytesWithStubs([]byte(configBytes), plugins, helper.DummyEncryptService{}, helper.DummyCFInterrogator{})
+			providedConfig, err := config.ConfigFromBytesWithStubs([]byte(configBytes), plugins, helper.DummyEncryptService{}, helper.DummyCFInterrogator{}, helper.DummyEC2Interrogator{})
 			if err != nil {
 				t.Errorf("failed to parse config %s: %v", configBytes, err)
 				t.FailNow()

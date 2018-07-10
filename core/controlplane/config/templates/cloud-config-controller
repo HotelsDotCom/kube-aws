@@ -364,13 +364,14 @@ coreos:
         EnvironmentFile=-/etc/etcd-environment
         Environment=KUBELET_IMAGE_TAG={{.K8sVer}}
         Environment=KUBELET_IMAGE_URL={{ .HyperkubeImage.RktRepoWithoutTag }}
-        Environment="RKT_RUN_ARGS=--volume dns,kind=host,source=/etc/resolv.conf {{.HyperkubeImage.Options}}\
+        Environment="RKT_RUN_ARGS={{.HyperkubeImage.Options}}\
+        --volume dns,kind=host,source=/etc/resolv.conf \
+        --mount volume=dns,target=/etc/resolv.conf \
         {{ if not .Kubernetes.Networking.SelfHosting.Enabled -}}
         --set-env=ETCD_CA_CERT_FILE=/etc/kubernetes/ssl/etcd-trusted-ca.pem \
         --set-env=ETCD_CERT_FILE=/etc/kubernetes/ssl/etcd-client.pem \
         --set-env=ETCD_KEY_FILE=/etc/kubernetes/ssl/etcd-client-key.pem \
         {{ end -}}
-        --mount volume=dns,target=/etc/resolv.conf \
         {{ if eq .ContainerRuntime "rkt" -}}
         --volume rkt,kind=host,source=/opt/bin/host-rkt \
         --mount volume=rkt,target=/usr/bin/rkt \
@@ -381,6 +382,12 @@ coreos:
         {{ end -}}
         --volume var-lib-cni,kind=host,source=/var/lib/cni \
         --mount volume=var-lib-cni,target=/var/lib/cni \
+        {{ if .Kubernetes.Networking.SelfHosting.Enabled -}}
+        --volume var-run-calico,kind=host,source=/var/run/calico \
+        --mount volume=var-run-calico,target=/var/run/calico \
+        --volume var-lib-calico,kind=host,source=/var/lib/calico \
+        --mount volume=var-lib-calico,target=/var/lib/calico \
+        {{ end -}}
         --volume var-log,kind=host,source=/var/log \
         --mount volume=var-log,target=/var/log \
         --volume cni-bin,kind=host,source=/opt/cni/bin \
@@ -402,6 +409,10 @@ coreos:
         ExecStartPre=/usr/bin/mkdir -p /opt/cni/bin
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/cni/net.d
+        {{ if .Kubernetes.Networking.SelfHosting.Enabled -}}
+        ExecStartPre=/usr/bin/mkdir -p /var/run/calico
+        ExecStartPre=/usr/bin/mkdir -p /var/lib/calico
+        {{ end -}}
         ExecStartPre=/bin/sh -ec "find /etc/kubernetes/manifests /srv/kubernetes/manifests  -maxdepth 1 -type f | xargs --no-run-if-empty sed -i 's|#ETCD_ENDPOINTS#|${ETCD_ENDPOINTS}|'"
         {{ if not .Kubernetes.Networking.SelfHosting.Enabled -}}
         {{ if .UseCalico -}}
@@ -413,7 +424,9 @@ coreos:
         {{ end -}}
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
         --kubeconfig=/etc/kubernetes/kubeconfig/controller.yaml \
+        {{if checkVersion "<1.10" .K8sVer -}}
         --require-kubeconfig \
+        {{end -}}
         --cni-conf-dir=/etc/kubernetes/cni/net.d \
         {{/* Work-around until https://github.com/kubernetes/kubernetes/issues/43967 is fixed via https://github.com/kubernetes/kubernetes/pull/43995 */ -}}
         --cni-bin-dir=/opt/cni/bin \
@@ -672,7 +685,7 @@ write_files:
   - path: {{$w.Path}}
     permissions: {{$w.PermissionsString}}
     encoding: gzip+base64
-    content: {{$w.GzippedBase64Content}}
+    content: {{$w.RenderGzippedBase64Content .}}
   {{- end }}
 {{- end }}
   - path: /etc/modules-load.d/ip_vs.conf
@@ -969,8 +982,10 @@ write_files:
         --from-file=$kiam_tls_dir/agent-key.pem --dry-run -o yaml | kubectl apply -n kube-system -f -
 
       mfdir=/srv/kubernetes/manifests
-      applyall "${mfdir}/kube-system-ns.yaml" "${mfdir}/kiam-all.yaml"
+      applyall "${mfdir}/kiam-all.yaml"
       {{ end }}
+
+      applyall "/srv/kubernetes/manifests/kube-system-ns.yaml"
 
       # See https://github.com/kubernetes-incubator/kube-aws/issues/1039#issuecomment-348978375
       if ks get apiservice v1beta1.metrics.k8s.io && ! ps ax | grep '[h]yperkube proxy'; then
@@ -1131,12 +1146,7 @@ write_files:
 
   - path: /srv/kubernetes/manifests/canal.yaml
     content: |
-      # Canal Version v3.0.3
-      # https://docs.projectcalico.org/v3.0/releases#v3.0.3
-      # This manifest includes the following component versions:
-      #   calico/node:v3.0.3
-      #   calico/cni:v2.0.1
-      #   coreos/flannel:
+      # Based on https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/canal/canal.yaml
 
       # This ConfigMap can be used to configure a self-hosted Canal installation.
       kind: ConfigMap
@@ -1358,7 +1368,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -1368,7 +1378,7 @@ write_files:
                 - mountPath: /etc/kubernetes/cni/net.d
                   name: cni-net-dir
               - name: net-migration
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/touch
                 - /etc/kubernetes/cni/net.d/net-migration
@@ -1445,6 +1455,9 @@ write_files:
                   - mountPath: /var/run/calico
                     name: var-run-calico
                     readOnly: false
+                  - mountPath: /var/lib/calico
+                    name: var-lib-calico
+                    readOnly: false
               # This container installs the Calico CNI binaries
               # and CNI network config file on each node.
               - name: install-cni
@@ -1473,7 +1486,7 @@ write_files:
               # This container runs flannel using the kube-subnet-mgr backend
               # for allocating subnets.
               - name: flannel
-                image: {{ .FlannelImage.RepoWithTag }}
+                image: {{ .Kubernetes.Networking.SelfHosting.FlannelImage.RepoWithTag }}
                 command: [ "/opt/bin/flanneld", "--ip-masq", "--kube-subnet-mgr" ]
                 securityContext:
                   privileged: true
@@ -1509,6 +1522,9 @@ write_files:
               - name: var-run-calico
                 hostPath:
                   path: /var/run/calico
+              - name: var-lib-calico
+                hostPath:
+                  path: /var/lib/calico
               # Used to install CNI.
               - name: cni-bin-dir
                 hostPath:
@@ -1557,10 +1573,8 @@ write_files:
                 requiredDuringSchedulingIgnoredDuringExecution:
                   nodeSelectorTerms:
                   - matchExpressions:
-                    - key: kubernetes.io/role
-                      operator: In
-                      values:
-                        - node
+                    - key: node-role.kubernetes.io/master
+                      operator: DoesNotExist
             hostNetwork: true
             serviceAccountName: canal
             tolerations:
@@ -1577,7 +1591,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -1587,7 +1601,7 @@ write_files:
                 - mountPath: /etc/kubernetes/cni/net.d
                   name: cni-net-dir
               - name: net-migration
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/touch
                 - /etc/kubernetes/cni/net.d/net-migration
@@ -1667,6 +1681,9 @@ write_files:
                   - mountPath: /var/run/calico
                     name: var-run-calico
                     readOnly: false
+                  - mountPath: /var/lib/calico
+                    name: var-lib-calico
+                    readOnly: false
               # This container installs the Calico CNI binaries
               # and CNI network config file on each node.
               - name: install-cni
@@ -1695,7 +1712,7 @@ write_files:
               # This container runs flannel using the kube-subnet-mgr backend
               # for allocating subnets.
               - name: flannel
-                image: {{ .FlannelImage.RepoWithTag }}
+                image: {{ .Kubernetes.Networking.SelfHosting.FlannelImage.RepoWithTag }}
                 command: [ "/opt/bin/flanneld", "--ip-masq", "--kube-subnet-mgr" ]
                 securityContext:
                   privileged: true
@@ -1731,6 +1748,9 @@ write_files:
               - name: var-run-calico
                 hostPath:
                   path: /var/run/calico
+              - name: var-lib-calico
+                hostPath:
+                  path: /var/lib/calico
               # Used to install CNI.
               - name: cni-bin-dir
                 hostPath:
@@ -1844,6 +1864,36 @@ write_files:
           plural: networkpolicies
           singular: networkpolicy
 
+      ---
+
+      apiVersion: apiextensions.k8s.io/v1beta1
+      kind: CustomResourceDefinition
+      metadata:
+        name: globalnetworksets.crd.projectcalico.org
+      spec:
+        scope: Cluster
+        group: crd.projectcalico.org
+        version: v1
+        names:
+          kind: GlobalNetworkSet
+          plural: globalnetworksets
+          singular: globalnetworkset
+
+      ---
+
+      apiVersion: apiextensions.k8s.io/v1beta1
+      kind: CustomResourceDefinition
+      metadata:
+        name: hostendpoints.crd.projectcalico.org
+      spec:
+        scope: Cluster
+        group: crd.projectcalico.org
+        version: v1
+        names:
+          kind: HostEndpoint
+          plural: hostendpoints
+          singular: hostendpoint
+
   - path: /srv/kubernetes/rbac/network-daemonsets.yaml
     content: |
       apiVersion: v1
@@ -1905,7 +1955,15 @@ write_files:
             - list
             - update
             - watch
+        # remove when Calico < 3.1 is not supported any more
         - apiGroups: ["extensions"]
+          resources:
+            - networkpolicies
+          verbs:
+            - get
+            - list
+            - watch
+        - apiGroups: ["networking.k8s.io"]
           resources:
             - networkpolicies
           verbs:
@@ -1923,6 +1981,8 @@ write_files:
             - globalnetworkpolicies
             - networkpolicies
             - clusterinformations
+            - hostendpoints
+            - globalnetworksets
           verbs:
             - create
             - get
@@ -2081,7 +2141,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -2091,7 +2151,7 @@ write_files:
                 - mountPath: /etc/kubernetes/cni/net.d
                   name: cni-net-dir
               - name: net-migration
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/touch
                 - /etc/kubernetes/cni/net.d/net-migration
@@ -2117,7 +2177,7 @@ write_files:
                 - mountPath: /host/etc/cni/net.d
                   name: cni-net-dir
             - name: flannel
-              image: {{ .FlannelImage.RepoWithTag }}
+              image: {{ .Kubernetes.Networking.SelfHosting.FlannelImage.RepoWithTag }}
               command:
               - /opt/bin/flanneld
               args:
@@ -2246,7 +2306,7 @@ write_files:
             terminationGracePeriodSeconds: 0
             initContainers:
               - name: remove-cni-networks
-                image: alpine:latest
+                image: {{.HyperkubeImage.RepoWithTag}}
                 command:
                 - /bin/rm
                 - -rf
@@ -2296,6 +2356,9 @@ write_files:
                   - mountPath: /var/run/calico
                     name: var-run-calico
                     readOnly: false
+                  - mountPath: /var/lib/calico
+                    name: var-lib-calico
+                    readOnly: false
                   - mountPath: /calico-secrets
                     name: etcd-certs
                   - mountPath: /etc/resolv.conf
@@ -2308,6 +2371,9 @@ write_files:
               - name: var-run-calico
                 hostPath:
                   path: /var/run/calico
+              - name: var-lib-calico
+                hostPath:
+                  path: /var/lib/calico
               - name: cni-bin-dir
                 hostPath:
                   path: /opt/cni/bin
@@ -3215,7 +3281,12 @@ write_files:
             kubeconfig: /etc/kubernetes/kubeconfig/kube-proxy.yaml
           clusterCIDR: {{.PodCIDR}}
           {{if .KubeProxy.IPVSMode.Enabled -}}
+          {{if checkVersion ">=1.10" .K8sVer -}}
+          featureGates:
+            SupportIPVSProxyMode: true
+          {{else -}}
           featureGates: "SupportIPVSProxyMode=true"
+          {{end -}}
           mode: ipvs
           ipvs:
             scheduler: {{.KubeProxy.IPVSMode.Scheduler}}
@@ -3367,6 +3438,16 @@ write_files:
           - --feature-gates=PodPriority={{.Experimental.Admission.Priority.Enabled}},ExpandPersistentVolumes={{.Experimental.Admission.PersistentVolumeClaimResize.Enabled}}
          {{end}}
           - --cloud-provider=aws
+          {{ if .Addons.APIServerAggregator.Enabled -}}
+          - --requestheader-client-ca-file=/etc/kubernetes/ssl/ca.pem
+          - --requestheader-allowed-names=aggregator
+          - --requestheader-extra-headers-prefix=X-Remote-Extra-
+          - --requestheader-group-headers=X-Remote-Group
+          - --requestheader-username-headers=X-Remote-User
+          - --enable-aggregator-routing=false
+          - --proxy-client-cert-file=/etc/kubernetes/ssl/apiserver-aggregator.pem
+          - --proxy-client-key-file=/etc/kubernetes/ssl/apiserver-aggregator-key.pem
+          {{ end -}}
           {{range $f := .APIServerFlags}}
           - --{{$f.Name}}={{$f.Value}}
           {{ end -}}
@@ -4346,8 +4427,8 @@ write_files:
                 - --requestheader-extra-headers-prefix=X-Remote-Extra
                 resources:
                   limits:
-                    cpu: 80m
-                    memory: 200Mi
+                    cpu: 500m
+                    memory: 512Mi
                   requests:
                     cpu: 80m
                     memory: 200Mi
@@ -4794,6 +4875,16 @@ write_files:
   - path: /etc/kubernetes/ssl/service-account-key.pem{{if .AssetsEncryptionEnabled}}.enc{{end}}
     encoding: gzip+base64
     content: {{.AssetsConfig.ServiceAccountKey}}
+
+  {{ if .Addons.APIServerAggregator.Enabled -}}
+  - path: /etc/kubernetes/ssl/apiserver-aggregator.pem
+    encoding: gzip+base64
+    content: {{.AssetsConfig.APIServerAggregatorCert}}
+
+  - path: /etc/kubernetes/ssl/apiserver-aggregator-key.pem{{if .AssetsEncryptionEnabled}}.enc{{end}}
+    encoding: gzip+base64
+    content: {{.AssetsConfig.APIServerAggregatorKey}}
+  {{ end -}}
 {{ end }}
 
 {{ if .Kubernetes.EncryptionAtRest.Enabled }}
@@ -4961,7 +5052,7 @@ write_files:
 
         log "Running a pod on node ${node} to determine pod ip address..."
         local selector="{ \"apiVersion\": \"v1\", \"spec\": { \"nodeSelector\": { \"kubernetes.io/hostname\": \"${node}\" }, \"tolerations\": [ { \"effect\": \"NoSchedule\", \"operator\": \"Exists\" }, { \"effect\": \"NoExecute\", \"operator\": \"Exists\" } ] } }"
-        ipaddress=$(kubectl -n kube-system run find-pod-ip-${node%%.*} --pod-running-timeout=1m -i -t --image=alpine:latest --restart=Never --overrides="${selector}" -- /bin/sh -c "cat /proc/net/fib_trie | awk '/32 host/ {print f} {f=\$2}' | grep -v 127.0.0.1 | uniq") || return 1
+        ipaddress=$(kubectl -n kube-system run find-pod-ip-${node%%.*} --pod-running-timeout=1m -i -t --image={{.HyperkubeImage.RepoWithTag}} --restart=Never --overrides="${selector}" -- /bin/sh -c "cat /proc/net/fib_trie | awk '/32 host/ {print f} {f=\$2}' | grep -v 127.0.0.1 | uniq") || return 1
         kubectl -n kube-system delete pod find-pod-ip-${node%%.*} 2>&1 >/dev/null
 
         if [[ -n "${ipaddress}" ]]; then
@@ -5473,6 +5564,9 @@ write_files:
     encoding: gzip+base64
     content: {{.AssetsConfig.KIAMAgentCert}}
 
+{{end}}
+
+
   # Without the namespace annotation the pod will be unable to assume any roles
   - path: /srv/kubernetes/manifests/kube-system-ns.yaml
     content: |
@@ -5486,6 +5580,8 @@ write_files:
 	{{- range $key, $value := .KubeSystemNamespaceLabels }}
           {{ $key }}: {{ $value }}
 	{{- end }}
+
+{{if .Experimental.KIAMSupport.Enabled }}
 
   - path: /srv/kubernetes/manifests/kiam-all.yaml
     content: |
@@ -5542,6 +5638,7 @@ write_files:
                   - --sync=1m
                   - --prometheus-listen-addr=0.0.0.0:9620
                   - --prometheus-sync-interval=5s
+                  - --session-duration={{.Experimental.KIAMSupport.SessionDuration}}
                 volumeMounts:
                   - mountPath: /etc/ssl/certs
                     name: ssl-certs
@@ -5652,8 +5749,13 @@ write_files:
               key: CriticalAddonsOnly
             hostNetwork: true
             dnsPolicy: ClusterFirstWithHostNet
-            nodeSelector:
-              kubernetes.io/role: node
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: node-role.kubernetes.io/master
+                      operator: DoesNotExist
             volumes:
               - name: ssl-certs
                 hostPath:
