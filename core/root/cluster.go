@@ -153,7 +153,7 @@ func ClusterFromConfig(cfg *config.Config, opts options, awsDebug bool) (Cluster
 	netOpts.StackTemplateTmplFile = opts.NetworkStackTemplateTmplFile
 	net, err := network.NewCluster(cfg.Cluster, netOpts, plugins, session)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initizlie network stack: %v", err)
+		return nil, fmt.Errorf("failed to initialize network stack: %v", err)
 	}
 
 	cpOpts := stackTemplateOpts
