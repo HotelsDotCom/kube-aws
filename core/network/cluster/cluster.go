@@ -129,6 +129,10 @@ func NewCluster(cfgRef *config.Cluster, opts config.StackTemplateOptions, plugin
 		StackConfig: stackConfig,
 	}
 
+	// Notes:
+	// * `c.StackConfig.CustomSystemdUnits` results in an `ambiguous selector ` error
+	// * `c.Controller.CustomSystemdUnits = controllerUnits` and `c.ClusterRef.Controller.CustomSystemdUnits = controllerUnits` results in modifying invisible/duplicate CustomSystemdSettings
+
 	c.assets, err = c.buildAssets()
 
 	return c, err
