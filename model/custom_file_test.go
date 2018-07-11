@@ -33,7 +33,7 @@ template: I love {{ .ChoiceOfFruit }}
 
 func TestCustomFileRendersContent(t *testing.T) {
 	cfile := CustomFile{}
-	err := yaml.Unmarshal([]byte(customFileContent), &cfile)
+	err := yaml.UnmarshalStrict([]byte(customFileContent), &cfile)
 	assert.NoError(t, err)
 	output, err := cfile.RenderContent(TestContextFruit{})
 	assert.NoError(t, err)
@@ -44,7 +44,7 @@ func TestCustomFileRenderWithEncoding(t *testing.T) {
 	helloWorldEncoded := `H4sIAAAAAAAA/8pIzcnJVyjPL8pJAQQAAP//hRFKDQsAAAA=`
 
 	cfile := CustomFile{}
-	err := yaml.Unmarshal([]byte(customFileContent), &cfile)
+	err := yaml.UnmarshalStrict([]byte(customFileContent), &cfile)
 	assert.NoError(t, err)
 	output, err := cfile.RenderGzippedBase64Content(TestContextFruit{})
 	assert.NoError(t, err)
@@ -53,7 +53,7 @@ func TestCustomFileRenderWithEncoding(t *testing.T) {
 
 func TestCustomFileRenderTemplate(t *testing.T) {
 	cfile := CustomFile{}
-	err := yaml.Unmarshal([]byte(customFileTemplate), &cfile)
+	err := yaml.UnmarshalStrict([]byte(customFileTemplate), &cfile)
 	assert.NoError(t, err)
 	output, err := cfile.RenderContent(TestContextFruit{ChoiceOfFruit: "apples"})
 	assert.NoError(t, err)
@@ -64,7 +64,7 @@ func TestCustomFileRenderTemplateWithEncoding(t *testing.T) {
 	iLoveApplesEncoded := `H4sIAAAAAAAA//JUyMkvS1VILCjISS0GBAAA//+rYX5CDQAAAA==`
 
 	cfile := CustomFile{}
-	err := yaml.Unmarshal([]byte(customFileTemplate), &cfile)
+	err := yaml.UnmarshalStrict([]byte(customFileTemplate), &cfile)
 	assert.NoError(t, err)
 	output, err := cfile.RenderGzippedBase64Content(TestContextFruit{ChoiceOfFruit: "apples"})
 	assert.NoError(t, err)
@@ -77,7 +77,7 @@ permissions: 0777
 template: I love {{ if .ChoiceOfFruit }}`
 
 	cfile := CustomFile{}
-	err := yaml.Unmarshal([]byte(badTemplate), &cfile)
+	err := yaml.UnmarshalStrict([]byte(badTemplate), &cfile)
 	assert.NoError(t, err)
 	output, err := cfile.RenderContent(TestContextAnimal{})
 	assert.Error(t, err)
@@ -93,7 +93,7 @@ template: I love {{ .ChoiceOfFruit }}
 `
 
 	cfile := CustomFile{}
-	err := yaml.Unmarshal([]byte(cf), &cfile)
+	err := yaml.UnmarshalStrict([]byte(cf), &cfile)
 	assert.NoError(t, err)
 	output, err := cfile.RenderContent(TestContextFruit{ChoiceOfFruit: "apples"})
 	assert.NoError(t, err)
