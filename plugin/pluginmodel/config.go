@@ -93,6 +93,7 @@ type Stacks struct {
 	ControlPlane Stack `yaml:"controlPlane,omitempty"`
 	Etcd         Stack `yaml:"etcd,omitempty"`
 	NodePool     Stack `yaml:"nodePool,omitempty"`
+	Network      Stack `yaml:"network,omitempty"`
 }
 
 // Stack represents a set of customizations to a CloudFormation stack template
