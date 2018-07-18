@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/kubernetes-incubator/kube-aws/cfnresource"
+	"github.com/kubernetes-incubator/kube-aws/cfnstack"
 	"github.com/kubernetes-incubator/kube-aws/coreos/amiregistry"
 	"github.com/kubernetes-incubator/kube-aws/gzipcompressor"
 	"github.com/kubernetes-incubator/kube-aws/model"
@@ -30,11 +31,11 @@ const (
 	userDataDir    = "userdata"
 
 	// Experimental SelfHosting feature default images.
-	kubeNetworkingSelfHostingDefaultCalicoNodeImageTag = "v3.0.3"
-	kubeNetworkingSelfHostingDefaultCalicoCniImageTag  = "v2.0.1"
+	kubeNetworkingSelfHostingDefaultCalicoNodeImageTag = "v3.0.6"
+	kubeNetworkingSelfHostingDefaultCalicoCniImageTag  = "v2.0.5"
 	kubeNetworkingSelfHostingDefaultFlannelImageTag    = "v0.9.1"
 	kubeNetworkingSelfHostingDefaultFlannelCniImageTag = "v0.3.0"
-	kubeNetworkingSelfHostingDefaultTyphaImageTag      = "v0.6.2"
+	kubeNetworkingSelfHostingDefaultTyphaImageTag      = "v0.6.4"
 )
 
 func NewDefaultCluster() *Cluster {
@@ -224,7 +225,7 @@ func NewDefaultCluster() *Cluster {
 			HeapsterImage:                      model.Image{Repo: "k8s.gcr.io/heapster", Tag: "v1.5.0", RktPullDocker: false},
 			MetricsServerImage:                 model.Image{Repo: "k8s.gcr.io/metrics-server-amd64", Tag: "v0.2.1", RktPullDocker: false},
 			AddonResizerImage:                  model.Image{Repo: "k8s.gcr.io/addon-resizer", Tag: "1.8.1", RktPullDocker: false},
-			KubernetesDashboardImage:           model.Image{Repo: "k8s.gcr.io/kubernetes-dashboard-amd64", Tag: "v1.8.1", RktPullDocker: false},
+			KubernetesDashboardImage:           model.Image{Repo: "k8s.gcr.io/kubernetes-dashboard-amd64", Tag: "v1.8.3", RktPullDocker: false},
 			PauseImage:                         model.Image{Repo: "k8s.gcr.io/pause-amd64", Tag: "3.1", RktPullDocker: false},
 			FlannelImage:                       model.Image{Repo: "quay.io/coreos/flannel", Tag: "v0.9.1", RktPullDocker: false},
 			JournaldCloudWatchLogsImage:        model.Image{Repo: "jollinshead/journald-cloudwatch-logs", Tag: "0.1", RktPullDocker: true},
@@ -417,6 +418,31 @@ func (c *Cluster) SetDefaults() error {
 		return fmt.Errorf("You can not mix private and public subnets for etcd nodes. Please explicitly configure etcd.subnets[] to contain either public or private subnets only")
 	}
 
+	if c.ExternalDNSName != "" {
+		// TODO: Deprecate externalDNSName?
+
+		if len(c.APIEndpointConfigs) != 0 {
+			return errors.New("invalid cluster: you can only specify either externalDNSName or apiEndpoints, but not both")
+		}
+
+		subnetRefs := []model.SubnetReference{}
+		for _, s := range c.Controller.LoadBalancer.Subnets {
+			subnetRefs = append(subnetRefs, model.SubnetReference{Name: s.Name})
+		}
+
+		c.APIEndpointConfigs = model.NewDefaultAPIEndpoints(
+			c.ExternalDNSName,
+			subnetRefs,
+			c.HostedZoneID,
+			c.RecordSetTTL,
+			c.Controller.LoadBalancer.Private,
+		)
+	}
+
+	if c.Addons.MetricsServer.Enabled {
+		c.Addons.APIServerAggregator.Enabled = true
+	}
+
 	return nil
 }
 
@@ -459,18 +485,19 @@ type ComputedDeploymentSettings struct {
 // Though it is highly configurable, it's basically users' responsibility to provide `correct` values if they're going beyond the defaults.
 type DeploymentSettings struct {
 	ComputedDeploymentSettings
-	CloudFormation              model.CloudFormation  `yaml:"cloudformation,omitempty"`
-	ClusterName                 string                `yaml:"clusterName,omitempty"`
-	S3URI                       string                `yaml:"s3URI,omitempty"`
-	KeyName                     string                `yaml:"keyName,omitempty"`
-	Region                      model.Region          `yaml:",inline"`
-	AvailabilityZone            string                `yaml:"availabilityZone,omitempty"`
-	ReleaseChannel              string                `yaml:"releaseChannel,omitempty"`
-	AmiId                       string                `yaml:"amiId,omitempty"`
-	DeprecatedVPCID             string                `yaml:"vpcId,omitempty"`
-	VPC                         model.VPC             `yaml:"vpc,omitempty"`
-	DeprecatedInternetGatewayID string                `yaml:"internetGatewayId,omitempty"`
-	InternetGateway             model.InternetGateway `yaml:"internetGateway,omitempty"`
+	CloudFormation                        model.CloudFormation  `yaml:"cloudformation,omitempty"`
+	ClusterName                           string                `yaml:"clusterName,omitempty"`
+	S3URI                                 string                `yaml:"s3URI,omitempty"`
+	DisableContainerLinuxAutomaticUpdates string                `yaml:"disableContainerLinuxAutomaticUpdates,omitempty"`
+	KeyName                               string                `yaml:"keyName,omitempty"`
+	Region                                model.Region          `yaml:",inline"`
+	AvailabilityZone                      string                `yaml:"availabilityZone,omitempty"`
+	ReleaseChannel                        string                `yaml:"releaseChannel,omitempty"`
+	AmiId                                 string                `yaml:"amiId,omitempty"`
+	DeprecatedVPCID                       string                `yaml:"vpcId,omitempty"`
+	VPC                                   model.VPC             `yaml:"vpc,omitempty"`
+	DeprecatedInternetGatewayID           string                `yaml:"internetGatewayId,omitempty"`
+	InternetGateway                       model.InternetGateway `yaml:"internetGateway,omitempty"`
 	// Required for validations like e.g. if instance cidr is contained in vpc cidr
 	VPCCIDR                 string            `yaml:"vpcCIDR,omitempty"`
 	InstanceCIDR            string            `yaml:"instanceCIDR,omitempty"`
@@ -498,8 +525,7 @@ type DeploymentSettings struct {
 	HyperkubeImage model.Image `yaml:"hyperkubeImage,omitempty"`
 	AWSCliImage    model.Image `yaml:"awsCliImage,omitempty"`
 
-	CalicoNodeImage model.Image `yaml:"calicoNodeImage,omitempty"`
-
+	CalicoNodeImage                    model.Image `yaml:"calicoNodeImage,omitempty"`
 	CalicoCniImage                     model.Image `yaml:"calicoCniImage,omitempty"`
 	CalicoCtlImage                     model.Image `yaml:"calicoCtlImage,omitempty"`
 	CalicoKubeControllersImage         model.Image `yaml:"calicoKubeControllersImage,omitempty"`
@@ -549,18 +575,19 @@ type EtcdSettings struct {
 
 // Cluster is the container of all the configurable parameters of a kube-aws cluster, customizable via cluster.yaml
 type Cluster struct {
-	KubeClusterSettings    `yaml:",inline"`
-	DeploymentSettings     `yaml:",inline"`
-	DefaultWorkerSettings  `yaml:",inline"`
-	ControllerSettings     `yaml:",inline"`
-	EtcdSettings           `yaml:",inline"`
-	AdminAPIEndpointName   string              `yaml:"adminAPIEndpointName,omitempty"`
-	RecordSetTTL           int                 `yaml:"recordSetTTL,omitempty"`
-	TLSCADurationDays      int                 `yaml:"tlsCADurationDays,omitempty"`
-	TLSCertDurationDays    int                 `yaml:"tlsCertDurationDays,omitempty"`
-	HostedZoneID           string              `yaml:"hostedZoneId,omitempty"`
-	PluginConfigs          model.PluginConfigs `yaml:"kubeAwsPlugins,omitempty"`
-	ProvidedEncryptService EncryptService
+	KubeClusterSettings     `yaml:",inline"`
+	DeploymentSettings      `yaml:",inline"`
+	DefaultWorkerSettings   `yaml:",inline"`
+	ControllerSettings      `yaml:",inline"`
+	EtcdSettings            `yaml:",inline"`
+	AdminAPIEndpointName    string              `yaml:"adminAPIEndpointName,omitempty"`
+	RecordSetTTL            int                 `yaml:"recordSetTTL,omitempty"`
+	TLSCADurationDays       int                 `yaml:"tlsCADurationDays,omitempty"`
+	TLSCertDurationDays     int                 `yaml:"tlsCertDurationDays,omitempty"`
+	HostedZoneID            string              `yaml:"hostedZoneId,omitempty"`
+	PluginConfigs           model.PluginConfigs `yaml:"kubeAwsPlugins,omitempty"`
+	ProvidedEncryptService  EncryptService
+	ProvidedEC2Interrogator cfnstack.EC2Interrogator
 	// SSHAccessAllowedSourceCIDRs is network ranges of sources you'd like SSH accesses to be allowed from, in CIDR notation
 	SSHAccessAllowedSourceCIDRs model.CIDRRanges       `yaml:"sshAccessAllowedSourceCIDRs,omitempty"`
 	CustomSettings              map[string]interface{} `yaml:"customSettings,omitempty"`
@@ -741,6 +768,16 @@ type Networking struct {
 	SelfHosting SelfHosting `yaml:"selfHosting"`
 }
 
+type ComputeResources struct {
+	Requests ResourceQuota `yaml:"requests,omitempty"`
+	Limits   ResourceQuota `yaml:"limits,omitempty"`
+}
+
+type ResourceQuota struct {
+	Cpu    string `yaml:"cpu"`
+	Memory string `yaml:"memory"`
+}
+
 type SelfHosting struct {
 	Enabled         bool        `yaml:"enabled"`
 	Type            string      `yaml:"type"`
@@ -807,8 +844,10 @@ func (c *KubeDns) MergeIfEmpty(other KubeDns) {
 }
 
 type KubernetesDashboard struct {
-	AdminPrivileges bool `yaml:"adminPrivileges"`
-	InsecureLogin   bool `yaml:"insecureLogin"`
+	AdminPrivileges  bool             `yaml:"adminPrivileges"`
+	InsecureLogin    bool             `yaml:"insecureLogin"`
+	Enabled          bool             `yaml:"enabled"`
+	ComputeResources ComputeResources `yaml:"resources,omitempty"`
 }
 
 type WaitSignal struct {

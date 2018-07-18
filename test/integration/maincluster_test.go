@@ -450,6 +450,9 @@ worker:
 						MetricsServer: model.MetricsServer{
 							Enabled: true,
 						},
+						APIServerAggregator: model.APIServerAggregator{
+							Enabled: true,
+						},
 					}
 
 					actual := c.Addons
@@ -3488,7 +3491,7 @@ worker:
 			configBytes := validCase.configYaml
 			// TODO Allow including plugins in test data?
 			plugins := []*pluginmodel.Plugin{}
-			providedConfig, err := config.ConfigFromBytesWithEncryptService([]byte(configBytes), plugins, helper.DummyEncryptService{})
+			providedConfig, err := config.ConfigFromBytesWithStubs([]byte(configBytes), plugins, helper.DummyEncryptService{}, helper.DummyEC2Interrogator{})
 			if err != nil {
 				t.Errorf("failed to parse config %s: %v", configBytes, err)
 				t.FailNow()
