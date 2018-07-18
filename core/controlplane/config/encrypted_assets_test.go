@@ -69,11 +69,6 @@ func TestTLSGeneration(t *testing.T) {
 			KeyBytes:  assets.EtcdKey,
 			CertBytes: assets.EtcdCert,
 		},
-		{
-			Name:      "oidc",
-			KeyBytes:  assets.OidcKey,
-			CertBytes: assets.OidcCert,
-		},
 	}
 
 	var err error
@@ -160,7 +155,7 @@ func TestReadOrCreateCompactAssets(t *testing.T) {
 
 			files := []string{
 				"admin-key.pem.enc", "worker-key.pem.enc", "apiserver-key.pem.enc",
-				"etcd-key.pem.enc", "etcd-client-key.pem.enc", "worker-ca-key.pem.enc", "oidc", "oidc-key",
+				"etcd-key.pem.enc", "etcd-client-key.pem.enc", "worker-ca-key.pem.enc",
 				"kiam-agent-key.pem.enc", "kiam-server-key.pem.enc",
 			}
 
