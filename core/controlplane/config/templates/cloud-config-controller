@@ -961,20 +961,6 @@ write_files:
       # Deployments
       applyall "${mfdir}"/{kube-dns,kube-dns-autoscaler,kubernetes-dashboard,{{ if .Addons.ClusterAutoscaler.Enabled }}cluster-autoscaler,{{ end }}heapster{{ if .KubeResourcesAutosave.Enabled }},kube-resources-autosave{{ end }}}"-de.yaml"
 
-{{/* RUN-605 Add Flyte */}}
-      {{ if .CustomSettings.Flyte.Enabled }}
-      kubectl apply -f "${mfdir}/flyte-konveyor.yaml"
-      {{ end }}
-{{/* RUN-605 Add Flyte */}}
-
-{{/* RUN-861 Add Helm-deploy-operator */}}
-      {{ if .CustomSettings.HelmDeployOperator.Enabled }}
-      kubectl apply -f "${mfdir}/helm-deploy-crd.yaml"
-      kubectl apply -f "${rbac}/helm-deploy-operator.yaml"
-      kubectl apply -f "${mfdir}/helm-deploy-operator.yaml"
-      {{ end }}
-{{/* RUN-861 */}}
-
       # Daemonsets
       applyall "${mfdir}"/kube-proxy"-ds.yaml"
 
