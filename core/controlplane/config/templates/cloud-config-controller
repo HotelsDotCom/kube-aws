@@ -64,7 +64,6 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
-{{/* RUN-509 Remove vault-based certs */}}
 {{if .DisableContainerLinuxAutomaticUpdates}}
     - name: disable-automatic-update.service
       command: start
@@ -3379,9 +3378,6 @@ write_files:
           command:
           - /hyperkube
           - controller-manager
-{{/* RUN Enable verbose logging */}}
-          - --v=3
-{{/* RUN Enable verbose logging */}}
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
           - --service-account-private-key-file=/etc/kubernetes/ssl/service-account-key.pem
@@ -5526,108 +5522,31 @@ write_files:
           fi
       done
 
-{{/* RUN-977 Legacy Service Account Support */}}
-  - path: /opt/bin/refresh-sa-keys
-    permissions: 0755
-    content: |
-      #!/bin/bash
-      set -u
-
-      # Re-factored service account refresh script.
-      # Creates NO new keys
-
-      P=serviceaccount-keys
-
-      kubectl() {
-        docker run --rm -i --net=host -v /tmp/sakey:/tmp/sakey -v /etc/kubernetes:/etc/kubernetes:ro -v /etc/resolv.conf:/etc/resolv.conf:ro {{.HyperkubeImage.RepoWithTag}} /kubectl "$@"
-      }
-
-      log() {
-        >&2 echo "$@"
-      }
-
-      get_key() {
-        local name=$1
-        kubectl --namespace=kube-system get -o json --ignore-not-found secret "${name}"
-      }
-
-      # MAIN
-
-      while ! SECRET_JSON=$(get_key "$P"); do
-        sleep 5
-        log "Waiting to get secret $P..."
-      done
-
-      if [[ -n "${SECRET_JSON}" ]]; then
-        EXTRA_KEYS="$(jq -er '.data.keypairs' <<<"${SECRET_JSON}" | base64 -d | jq -er '.[].key')"
-        log "Found extra service-account keys in ${P}, adding them to $1"
-        echo "${EXTRA_KEYS}" >>$1
-      fi
-
-      # Once we have run it is ok for apiservers to bind to 0.0.0.0
-      log "Restarting apiserver listening on all interfaces"
-      sed -e 's/bind-address=127.0.0.1/bind-address=0.0.0.0/g' -i /etc/kubernetes/manifests/kube-apiserver.yaml
-      docker ps --filter name='k8s_kube-apiserver*' -q | xargs --no-run-if-empty docker rm -f
-
-  - path: /opt/bin/consolidate-sa-tokens.sh
+  - path: /opt/bin/regenerate-all-serviceaccounts.sh
     permissions: 0755
     content: |
       #!/bin/bash
 
-      # ServiceAccount Consolidation
-      # Recreates all services accounts under the current signing key.
-
-      DONE_TOGGLE=leave-serviceaccount-tokens-alone
+      # A Script to sort out service account issues
+      # Unable to authenticate the request due to an error: [invalid bearer token, [invalid bearer token, invalid signing method]]
 
       log() {
         >&2 echo "$@"
       }
 
       kubectl() {
-        docker run --rm -i --net=host -v /tmp/sakey:/tmp/sakey -v /etc/kubernetes:/etc/kubernetes:ro -v /etc/resolv.conf:/etc/resolv.conf:ro {{.HyperkubeImage.RepoWithTag}} /kubectl "$@"
+        docker run --rm -i --net=host -v /tmp/sakey:/tmp/sakey -v /etc/kubernetes:/etc/kubernetes:ro -v /etc/resolv.conf:/etc/resolv.conf:ro k8s.gcr.io/hyperkube-amd64:v1.9.3 /kubectl "$@"
       }
 
-      refresh_token() {
+      remove_token() {
         local acc=$1
         local ns=$2
 
         local satoken=$(kubectl get sa ${acc} -n ${ns} -o json | jq -e --raw-output '.secrets[0].name')
         echo "Recreating token ${satoken} for account '${acc}' in namespace '${ns}'"
         kubectl delete secret ${satoken} -n ${ns} || return 1
-        cat <<EOF | kubectl create -f - -n ${ns} || return 1
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: ${satoken}
-        annotations:
-          kubernetes.io/service-account.name: ${acc}
-      type: kubernetes.io/service-account-token
-      EOF
         return 0
       }
-
-      while ! (kubectl get ns kube-system >/dev/null 2>&1); do
-        echo "Waiting for apiserver to be available..."
-        sleep 3
-      done
-
-      echo "Looking for the lock ${DONE_TOGGLE}"
-      if (kubectl get secret -n kube-system ${DONE_TOGGLE} >/dev/null 2>&1); then
-        echo "Tokens have already by migrated, nothing to do."
-        exit 0
-      fi
-
-      if ! error=$(kubectl get secrets -n kube-system 2>&1); then
-        log "Suspected apiserver issue.. aborting: ${error}"
-        exit 1
-      fi
-
-      log "OK TO CONSOLIDATE SERVICE ACCOUNT TOKENS"
-      log "Creating lock secret kube-system/${DONE_TOGGLE}" 
-      if ! (kubectl create secret generic ${DONE_TOGGLE} -n kube-system); then
-        log "Failed to create lock, aborting"
-        exit 1
-      fi
 
       echo "Finding all serviceaccounts..."
       service_sa_list=$(kubectl get sa --all-namespaces --no-headers | awk '{printf "%s:%s\n",$1,$2}')
@@ -5641,12 +5560,11 @@ write_files:
       for sa in $service_sa_list; do
         acc="${sa#*:}"
         ns="${sa%:*}"
-        while ! (refresh_token ${acc} ${ns}); do
+        while ! (remove_token ${acc} ${ns}); do
           sleep 5
           echo "Failed to refresh ${acc} - retrying ..."
         done
       done
-{{/* RUN-977 Legacy Service Account Support */}}
 
   - path: /opt/bin/handle-cluster-cidr-changes
     permissions: 0755
@@ -6239,12 +6157,8 @@ write_files:
         validate_kube_service
         validate_services
       else
-        log "No previous cidrs saved - validating everything :) ..."
+        log "No previous cidrs saved ..."
         save_configmap
-        validate_nodes
-        validate_pods
-        validate_kube_service
-        validate_services
       fi
 
       if [[ "${deleted_myself}" == "1" ]]; then
