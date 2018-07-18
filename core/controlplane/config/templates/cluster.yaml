@@ -13,6 +13,9 @@ s3URI: {{.S3URI}}
 # The AMI ID of CoreOS.
 amiId: "{{.AmiId}}"
 
+# Container Linux has automatic updates https://coreos.com/os/docs/latest/update-strategies.html. This can be a risk in certain situations and this is why is disabled by default and you can enable it by setting this param to false.
+disableContainerLinuxAutomaticUpdates: true
+
 # The ID of hosted zone to add the externalDNSName to.
 # Either specify hostedZoneId or hostedZone, but not both
 #hostedZoneId: ""
@@ -226,6 +229,9 @@ kmsKeyArn: "{{.KMSKeyARN}}"
 #     kube-aws.coreos.com/role: controller
 #
 #  # User defined files that will be added to the Controller cluster cloud-init configuration in the "write_files:" section.
+#  # Writing a kubernetes manifest to path /srv/kubernetes/manifests/custom/*.yaml will be automatically
+#  # installed when the controllers start up.
+# 
 #  customFiles:
 #    - path: "/etc/rkt/auth.d/docker.json"
 #      permissions: 0600
@@ -1067,7 +1073,7 @@ worker:
 # Kube Dashboard image repository to use.
 #kubernetesDashboardImage:
 #  repo: k8s.gcr.io/kubernetes-dashboard-amd64
-#  tag: v1.8.1
+#  tag: v1.8.3
 #  rktPullDocker: false
 
 # Calico Controller image repository to use.
