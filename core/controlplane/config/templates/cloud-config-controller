@@ -3216,9 +3216,7 @@ write_files:
           - /hyperkube
           - apiserver
           - --apiserver-count={{if .MinControllerCount}}{{ .MinControllerCount }}{{else}}{{ .ControllerCount }}{{end}}
-{{/* RUN-977 Legacy Service Account Support - this should be 0.0.0.0 once service account signing keys are fixed */}}
-          - --bind-address=127.0.0.1
-{{/* RUN-977 Legacy Service Account Support */}}
+          - --bind-address=0.0.0.0
           - --etcd-servers=#ETCD_ENDPOINTS#
           - --etcd-cafile=/etc/kubernetes/ssl/etcd-trusted-ca.pem
           - --etcd-certfile=/etc/kubernetes/ssl/etcd-client.pem
