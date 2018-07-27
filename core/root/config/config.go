@@ -33,7 +33,8 @@ type UnmarshalledConfig struct {
 	model.UnknownKeys    `yaml:",inline"`
 }
 
-type Worker struct {
+type Worker struct {}
+	SequentialRoll    SequentialRoll             `yaml:"sequentialRoll,omitempty"`
 	APIEndpointName   string                     `yaml:"apiEndpointName,omitempty"`
 	NodePools         []*nodepool.ProvidedConfig `yaml:"nodePools,omitempty"`
 	model.UnknownKeys `yaml:",inline"`
@@ -60,6 +61,7 @@ func newDefaultUnmarshalledConfig() *UnmarshalledConfig {
 		Cluster: *controlplane.NewDefaultCluster(),
 		Worker: Worker{
 			NodePools: []*nodepool.ProvidedConfig{},
+			SequentialRoll: SequentialRoll{Enabled: false}
 		},
 	}
 }
@@ -117,6 +119,13 @@ func ConfigFromBytes(data []byte, plugins []*pluginmodel.Plugin) (*Config, error
 				np.APIEndpointName = cpConfig.APIEndpoints.GetDefault().Name
 			} else {
 				np.APIEndpointName = c.Worker.APIEndpointName
+			}
+		}
+
+		if np.WorkerNodePoolConfig.SequentialRoll == nil {
+			np.WorkerNodePoolConfig.SequentialRoll =  c.Worker.SequentialRoll
+			if np.SequentialRoll != nil {
+				np.WorkerNodePoolConfig.SequentialRoll.Enabled = np.SequentialRoll
 			}
 		}
 

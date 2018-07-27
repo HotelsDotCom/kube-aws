@@ -3428,6 +3428,61 @@ sshAccessAllowedSourceCIDRs:
 			},
 		},
 		{
+			context: "WorkerInheritsDefaultRollStrategy",
+			configYaml: minimalValidConfigYaml + `
+worker:
+  nodePools:
+  - name: pool1
+`,
+			assertConfig: []ConfigTester{
+				func(c *config.Config, t *testing.T) {
+					if c.NodePools[0].SequentialRoll.Enabled == false {
+						t.Errorf("unexpected enabling of sequentialRoll. its default value should be false")
+						t.FailNow()
+					}
+				},
+			},
+		},
+		// 		{
+		// 			context: "WorkersInheritDefinedRollStrategy",
+		// 			configYaml: minimalValidConfigYaml + `
+		// worker:
+		//   sequentialRoll:
+		//     enabled: true
+		//   nodePools:
+		// 	- name: pool1
+		// `,
+		// 			assertConfig: []ConfigTester{
+		// 				func(c *config.Config, t *testing.T) {
+		// 					if c.checkthatitstrueonnodepools {
+		// 						t.Errorf("sequentialRoll should be enabled")
+		// 						t.FailNow()
+		// 					}
+		// 				},
+		// 			},
+		// 		},
+		// 		{
+		// 			context: "WorkersCanOverrideDefinedStrategy",
+		// 			configYaml: minimalValidConfigYaml + `
+		// worker:
+		// 	sequentialRoll:
+		// 	  enabled: true
+		//   nodePools:
+		// 	- name: pool1
+		// 	- name: pool2
+		// 	  sequentialRoll:
+		// 	    enabled: false
+		// `,
+		// 			assertConfig: []ConfigTester{
+		// 				func(c *config.Config, t *testing.T) {
+		// 					if c.checkthatitstrueon1butnot2 {
+		// 						t.Errorf("sequentialRoll should be enabled")
+		// 						t.FailNow()
+		// 					}
+		// 				},
+		// 			},
+		// 		},
+		{
 			context: "WithWorkerWithoutGPUSettings",
 			configYaml: minimalValidConfigYaml + `
 worker:

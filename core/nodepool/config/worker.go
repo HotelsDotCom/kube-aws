@@ -6,7 +6,8 @@ import (
 )
 
 type WorkerNodePoolConfig struct {
-	APIEndpointName      string `yaml:"apiEndpointName,omitempty"`
+	APIEndpointName      string         `yaml:"apiEndpointName,omitempty"`
+	SequentialRoll       model.SequentialRoll `yaml:"sequentialRoll,omitempty"`
 	model.NodePoolConfig `yaml:",inline"`
 }
 

@@ -73,7 +73,7 @@
         "TemplateURL" : "{{$.Etcd.TemplateURL}}"
       }
     }
-    {{range $_, $p := .NodePools}},
+    {{range $i, $p := .NodePools}},
     "{{$p.Name}}": {
       "Type" : "AWS::CloudFormation::Stack",
       "Properties" : {
@@ -99,6 +99,9 @@
       },
       "DependsOn": [
         "{{$.ControlPlane.Name}}"
+        {{ if (and $i (eq $.Workers.RollStrategy 'sequential')) }}
+        ,"{{ (index $.NodePools (sub $i 1)).Name }}"
+        {{ end }}
       ]
     }{{end}}
     {{range $n, $r := .ExtraCfnResources}}

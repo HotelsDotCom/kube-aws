@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+
 	"github.com/kubernetes-incubator/kube-aws/logger"
 )
 
@@ -22,6 +23,13 @@ type NodePoolConfig struct {
 	CustomFiles               []CustomFile        `yaml:"customFiles,omitempty"`
 	CustomSystemdUnits        []CustomSystemdUnit `yaml:"customSystemdUnits,omitempty"`
 	Gpu                       Gpu                 `yaml:"gpu"`
+	SequentialRoll            SequentialRoll      `yaml:"sequentialRoll,omitempty"`
+}
+
+// SequentialRoll if set will cause the nodepools to roll one at a time, in the order they are defined in the nodePools body
+type SequentialRoll struct {
+	Enabled     bool `yaml:"enabled,omitempty"`
+	UnknownKeys `yaml:",inline"`
 }
 
 type ClusterAutoscaler struct {

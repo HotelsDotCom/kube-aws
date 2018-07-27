@@ -23,8 +23,20 @@ apiEndpoints:
 
 kubelet:
   rotateCerts: 
-    enabled: true
+		enabled: true
+		
+worker:
+  sequentialRoll: true
 `
+
+func TestRotateCerts(t *testing.T) {
+	controlplane_config, _ := cfg.ConfigFromBytes([]byte(cluster_config))
+
+	if !(controlplane_config) {
+		t.Errorf("When RotateCerts is enabled, Feature Gate RotateKubeletClientCertificate should be automatically enabled too")
+	}
+
+}
 
 func TestRotateCerts(t *testing.T) {
 	controlplane_config, _ := cfg.ConfigFromBytes([]byte(cluster_config))

@@ -270,6 +270,11 @@ worker:
 #  # Can be overriden per node pool by specifying `worker.nodePools[].apiEndpointName`
 #  apiEndpointName: versionedPublic
 #
+#  # Can be used to toggle how the worker nodepools roll out.
+#  # Default behaviour (false/disabled) will see each nodepool created/upgraded in paralell
+#  # If enabled, the nodepools will roll out one-at-a-time in sequence/order of how they're defined in the nodePool section.
+#  sequentialRoll: false
+#
   nodePools:
     - # Name of this node pool. Must be unique among all the node pools in this cluster
       name: nodepool1
