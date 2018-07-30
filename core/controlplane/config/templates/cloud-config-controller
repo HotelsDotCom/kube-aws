@@ -882,9 +882,9 @@ write_files:
 
       mfdir=/srv/kubernetes/manifests
       applyall "${mfdir}/kiam-all.yaml"
+      applyall "/srv/kubernetes/manifests/kube-system-ns.yaml"
       {{ end }}
 
-      applyall "/srv/kubernetes/manifests/kube-system-ns.yaml"
 
       # Daemonsets
       applyall \
