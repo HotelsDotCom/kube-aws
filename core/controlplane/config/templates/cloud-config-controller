@@ -867,6 +867,9 @@ write_files:
         sleep 3
       done
 
+      mfdir=/srv/kubernetes/manifests
+      rbac=/srv/kubernetes/rbac
+
       {{if .Experimental.KIAMSupport.Enabled }}
       kiam_tls_dir=/etc/kubernetes/ssl/kiam
       vols="${vols} -v $kiam_tls_dir:$kiam_tls_dir"
@@ -879,16 +882,13 @@ write_files:
         --from-file=$kiam_tls_dir/ca.pem \
         --from-file=$kiam_tls_dir/agent.pem \
         --from-file=$kiam_tls_dir/agent-key.pem --dry-run -o yaml | kubectl apply -n kube-system -f -
-
-      mfdir=/srv/kubernetes/manifests
+      
       applyall "${mfdir}/kiam-all.yaml"
       applyall "/srv/kubernetes/manifests/kube-system-ns.yaml"
       {{ end }}
-
-
+      
       # Daemonsets
-      applyall \
-        "${mfdir}/kube-proxy-ds.yaml" 
+      applyall "${mfdir}/kube-proxy-ds.yaml" 
 
       # See https://github.com/kubernetes-incubator/kube-aws/issues/1039#issuecomment-348978375
       if ks get apiservice v1beta1.metrics.k8s.io && ! ps ax | grep '[h]yperkube proxy'; then
@@ -903,9 +903,6 @@ write_files:
         done
         echo kube-proxy stared. apiserver should be responsive again.
       fi
-
-      mfdir=/srv/kubernetes/manifests
-      rbac=/srv/kubernetes/rbac
 
       {{- if .Kubernetes.Networking.SelfHosting.Enabled }}
       # When using NetworkingDeamonSets ensure that all nodes
