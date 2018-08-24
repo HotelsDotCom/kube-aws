@@ -114,14 +114,19 @@ func (p nodePool) NeedToExportIAMroles() bool {
 	return p.nodePool.IAMConfig.InstanceProfile.Arn == ""
 }
 
+// returns NodePoolRolling strategy string to be used in stack-template
+func (p nodePool) NodePoolRollingStrategy() string {
+	return p.nodePool.NodePoolConfig.NodePoolRollingStrategy
+}
+
 func (c TemplateParams) ControlPlane() controlPlane {
 	return controlPlane{
 		controlPlane: c.cluster.controlPlane,
 	}
 }
 
-func (c TemplateParams) NodePools() []NestedStack {
-	nps := []NestedStack{}
+func (c TemplateParams) NodePools() []nodePool {
+	nps := []nodePool{}
 	for _, np := range c.cluster.nodePools {
 		nps = append(nps, nodePool{
 			nodePool: np,
