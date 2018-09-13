@@ -5378,9 +5378,15 @@ write_files:
       for sa in $service_sa_list; do
         acc="${sa#*:}"
         ns="${sa%:*}"
+        retry=0
         while ! (remove_token ${acc} ${ns}); do
-          sleep 5
-          echo "Failed to refresh ${acc} - retrying ..."
+            if [ "$retry" -ge "2" ]; then
+                break
+            fi
+            sleep 2
+            echo "Failed to refresh ${acc} - retrying ..."
+            retry=$((retry + 1))
+            echo "retry is now:$retry"
         done
       done
 
