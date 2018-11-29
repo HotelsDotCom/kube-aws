@@ -317,12 +317,16 @@ worker:
 #      # If omitted, public subnets are created by kube-aws and used for worker nodes
 #      subnets:
 #      - name: ManagedPublicSubnet1
-#      # Used to specify the strategy in which the nodePool will roll out: in sequence or parallel
-#      # By default (if not set at nodePool/worker level) the nodePool will roll out in parallel
-#      # If set to 'Sequential', the nodePools will roll out one-by-one in order of declaration
-#      # NOTICE: if there are multiple nodePool groups that will use both rolling strategies ('Sequential'/'Parallel')
-#      # the nodePools rolling out in sequence should be declared before those that roll out in parallel
-#      # otherwise, the first declared nodePool to roll out in sequence will depend on the last concurrent nodePool
+#      # Used to specify the strategy for choosing which order updates are rolled out in: -
+#      #   'Parallel' (default) - updates are applied to each of the nodepools at the same time.
+#      #   'Sequential' - updates are applied to each nodepool in the order specified in this section.
+#      #   'AvailabilityZone' - updates are applied in availability zone order 
+#      # NOTE1: If you mix 'Sequential' and 'Parallel' the sequential node pools should be defined first.
+#      # NOTE2: The ordering of availability zones in the 'AvailabilityZone' strategy is the taken from the 
+#      #        order which the nodepools/subnets have been specified within this file. 
+       #        You are not allowed to mix availability zones within an individual nodepool when using this strategy
+#      #        but you can mix subnets from the same availability zone if you wish.
+#
 #      nodePoolRollingStrategy: Parallel
 #
 #      # Existing "glue" security groups attached to worker nodes which are typically used to allow

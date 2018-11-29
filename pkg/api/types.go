@@ -3,9 +3,9 @@ package api
 import "fmt"
 
 type Worker struct {
-	APIEndpointName         string           `yaml:"apiEndpointName,omitempty"`
-	NodePools               []WorkerNodePool `yaml:"nodePools,omitempty"`
-	NodePoolRollingStrategy string           `yaml:"nodePoolRollingStrategy,omitempty"`
+	APIEndpointName         string          `yaml:"apiEndpointName,omitempty"`
+	NodePools               WorkerNodePools `yaml:"nodePools,omitempty"`
+	NodePoolRollingStrategy string          `yaml:"nodePoolRollingStrategy,omitempty"`
 	UnknownKeys             `yaml:",inline"`
 }
 
