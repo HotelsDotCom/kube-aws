@@ -4,12 +4,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	"github.com/kubernetes-incubator/kube-aws/logger"
-	"github.com/kubernetes-incubator/kube-aws/netutil"
-	"github.com/kubernetes-incubator/kube-aws/pki"
 	"io/ioutil"
 	"net"
 	"time"
+
+	"github.com/kubernetes-incubator/kube-aws/logger"
+	"github.com/kubernetes-incubator/kube-aws/netutil"
+	"github.com/kubernetes-incubator/kube-aws/pki"
 )
 
 type Generator struct {
@@ -151,7 +152,8 @@ func (c Generator) GenerateAssetsOnMemory(caKey *rsa.PrivateKey, caCert *x509.Ce
 	}
 
 	workerConfig := pki.ClientCertConfig{
-		CommonName: "kube-worker",
+		CommonName:   "kube-worker",
+		Organization: []string{"system:nodes", "system:bootstrappers"},
 		DNSNames: []string{
 			fmt.Sprintf("*.%s.compute.internal", c.Region),
 			"*.ec2.internal",

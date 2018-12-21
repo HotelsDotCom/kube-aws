@@ -3255,7 +3255,6 @@ write_files:
           - --use-service-account-credentials
           {{/* optional flags below */}}
           {{ if .Experimental.TLSBootstrap.Enabled }}
-          - --insecure-experimental-approve-all-kubelet-csrs-for-group=system:kubelet-bootstrap
           - --cluster-signing-cert-file=/etc/kubernetes/ssl/worker-ca.pem
           - --cluster-signing-key-file=/etc/kubernetes/ssl/worker-ca-key.pem
           {{ end }}
