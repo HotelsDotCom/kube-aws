@@ -302,14 +302,14 @@ worker:
 #  # Can be overriden per node pool by specifying `worker.nodePools[].apiEndpointName`
 #  apiEndpointName: versionedPublic
 #
-#  # 'nodePoolRollingStrategy' is used to globally specify the strategy in which nodePools will roll out: in 'Sequential', 'Parallel' or 'AvailabilityZone'
-#  # - 'Sequential' - roll each nodepool one-at-a-time in the order that they are listed in this file.
-#  # - 'Parallel' - roll each nodepool at the same time.
+#  # 'nodePoolRollingStrategy' is used to globally specify the strategy in which nodePools will roll out: 'Sequential', 'Parallel' or 'AvailabilityZone'
 #  # - 'AvailabilityZone' - roll the nodepools an AWS AvailabilityZone at-a-time.
 #  #     (multiple pools in the same availability zone are rolled in 'Parrallel')
 #  #     (only nodepools containing subnets within a single AWS AvailabilityZone can be rolled out using this strategy)
-#  # The default behaviour is to roll using 'Parallel'
-#  nodePoolRollingStrategy: Parallel
+#  # - 'Sequential' - roll each nodepool one-at-a-time in the order that they are listed in this file.
+#  # - 'Parallel' - roll each nodepool at the same time.
+#  # The default behaviour is to roll using 'AvailabilityZone'
+#  nodePoolRollingStrategy: AvailabilityZone
 
   nodePools:
     - # Name of this node pool. Must be unique among all the node pools in this cluster
@@ -317,15 +317,18 @@ worker:
 #      # Subnet(s) to which worker nodes in this node pool are deployed
 #      # References subnets defined under the top-level `subnets` key by their names
 #      # If omitted, public subnets are created by kube-aws and used for worker nodes
+#      #
+#      # NOTICE: Do not mix subnets belonging to different AWS Availability zones within a single nodepool, it is better to create
+#      # a separate nodepool for each availability-zone (or change the nodePoolRollingStrateg to 'Sequential' or 'Parallel')
 #      subnets:
 #      - name: ManagedPublicSubnet1
 #
 #      # 'nodePoolRollingStrategy' is usually specified for all nodepools at the `worker` level but can be mix-and-matched on a per nodepool basis.
 #      # Please note when mixing:-
-#      # - A pool rolling out using the 'AvailabilityZone' strategy will only wait on other pools using the same strategy.
-#      # - When mixing 'Sequential` with other strategies define the `Sequential` nodepools first so that they don't wait unnecessarily for pools from the
-#      #   other strategies
-#      nodePoolRollingStrategy: Parallel
+#      # - Pools rolling with the 'AvailabilityZone' strategy will not wait for pools using other strategies.
+#      # - If mixing 'Sequential` with other strategies define your `Sequential` nodepools first so that they don't wait unnecessarily for pools from the
+#      #   other strategies.
+#      nodePoolRollingStrategy: AvailabilityZone
 #
 #      # Existing "glue" security groups attached to worker nodes which are typically used to allow
 #      # access from worker nodes to services running on an existing infrastructure

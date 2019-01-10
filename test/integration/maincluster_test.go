@@ -258,8 +258,8 @@ func TestMainClusterConfig(t *testing.T) {
 	hasDefaultNodePoolRollingStrategy := func(c *config.Config, t *testing.T) {
 		s := c.NodePools[0].NodePoolRollingStrategy
 
-		if s != "Parallel" {
-			t.Errorf("Default nodePool rolling strategy should be 'Parallel' but is not: %v", s)
+		if s != "AvailabilityZone" {
+			t.Errorf("Default nodePool rolling strategy should be 'AvailabilityZone' but is not: %v", s)
 		}
 	}
 
