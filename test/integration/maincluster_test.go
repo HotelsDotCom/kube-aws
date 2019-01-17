@@ -482,6 +482,16 @@ worker:
 						},
 						ClusterAutoscaler: api.ClusterAutoscalerSupport{
 							Enabled: true,
+							ComputeResources: api.ComputeResources{
+								Requests: api.ResourceQuota{
+									Cpu: "100m",
+									Memory: "300Mi",
+								},
+								Limits: api.ResourceQuota{
+									Cpu: "100m",
+									Memory: "300Mi",
+								},
+							},
 							Options: map[string]string{"v": "5", "test": "present"},
 						},
 						MetricsServer: api.MetricsServer{
