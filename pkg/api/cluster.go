@@ -15,21 +15,22 @@ import (
 	"github.com/kubernetes-incubator/kube-aws/netutil"
 )
 
-const (
-	k8sVer = "v1.11.3"
+// The version of kubernetes should be set through the top level 'build' script (not hidden away here)
+var KUBERNETES_VERSION = "v99.99"
 
+const (
 	// Experimental SelfHosting feature default images.
-	kubeNetworkingSelfHostingDefaultCalicoNodeImageTag = "v3.2.3"
-	kubeNetworkingSelfHostingDefaultCalicoCniImageTag  = "v3.2.3"
-	kubeNetworkingSelfHostingDefaultFlannelImageTag    = "v0.10.0"
+	kubeNetworkingSelfHostingDefaultCalicoNodeImageTag = "v3.6.1"
+	kubeNetworkingSelfHostingDefaultCalicoCniImageTag  = "v3.6.1"
+	kubeNetworkingSelfHostingDefaultFlannelImageTag    = "v0.11.0"
 	kubeNetworkingSelfHostingDefaultFlannelCniImageTag = "v0.3.0"
-	kubeNetworkingSelfHostingDefaultTyphaImageTag      = "v3.2.3"
+	kubeNetworkingSelfHostingDefaultTyphaImageTag      = "v3.6.1"
 )
 
 func NewDefaultCluster() *Cluster {
 	kubelet := Kubelet{
 		RotateCerts: RotateCerts{
-			Enabled: false,
+			Enabled: true,
 		},
 		SystemReservedResources: "",
 		KubeReservedResources:   "",
@@ -49,7 +50,7 @@ func NewDefaultCluster() *Cluster {
 				Enabled: false,
 			},
 			Priority{
-				Enabled: false,
+				Enabled: true,
 			},
 			MutatingAdmissionWebhook{
 				Enabled: false,
@@ -89,7 +90,7 @@ func NewDefaultCluster() *Cluster {
 			Options: map[string]string{},
 		},
 		TLSBootstrap: TLSBootstrap{
-			Enabled: false,
+			Enabled: true,
 		},
 		NodeAuthorizer: NodeAuthorizer{
 			Enabled: false,
@@ -147,7 +148,7 @@ func NewDefaultCluster() *Cluster {
 			VPCCIDR:            "10.0.0.0/16",
 			ReleaseChannel:     "stable",
 			KubeAWSVersion:     "UNKNOWN",
-			K8sVer:             k8sVer,
+			K8sVer:             KUBERNETES_VERSION,
 			ContainerRuntime:   "docker",
 			Subnets:            []Subnet{},
 			EIPAllocationIDs:   []string{},
@@ -192,6 +193,15 @@ func NewDefaultCluster() *Cluster {
 				AllowSkipLogin:  false,
 				Enabled:         true,
 				Replicas:        1,
+				ComputeResources: ComputeResources{
+					Requests: ResourceQuota{
+						Cpu:    "1",
+						Memory: "500Mi",
+					},
+					Limits: ResourceQuota{
+						Memory: "5000Mi",
+					},
+				},
 			},
 			Kubernetes: Kubernetes{
 				Authentication: KubernetesAuthentication{
@@ -219,22 +229,22 @@ func NewDefaultCluster() *Cluster {
 				},
 			},
 			CloudFormationStreaming:            true,
-			HyperkubeImage:                     Image{Repo: "k8s.gcr.io/hyperkube-amd64", Tag: k8sVer, RktPullDocker: true},
+			HyperkubeImage:                     Image{Repo: "k8s.gcr.io/hyperkube-amd64", Tag: KUBERNETES_VERSION, RktPullDocker: true},
 			AWSCliImage:                        Image{Repo: "quay.io/coreos/awscli", Tag: "master", RktPullDocker: false},
-			ClusterAutoscalerImage:             Image{Repo: "k8s.gcr.io/cluster-autoscaler", Tag: "v1.1.0", RktPullDocker: false},
-			ClusterProportionalAutoscalerImage: Image{Repo: "k8s.gcr.io/cluster-proportional-autoscaler-amd64", Tag: "1.1.2", RktPullDocker: false},
-			CoreDnsImage:                       Image{Repo: "coredns/coredns", Tag: "1.1.3", RktPullDocker: false},
+			ClusterAutoscalerImage:             Image{Repo: "k8s.gcr.io/cluster-autoscaler", Tag: "v1.13.4", RktPullDocker: false},
+			ClusterProportionalAutoscalerImage: Image{Repo: "k8s.gcr.io/cluster-proportional-autoscaler-amd64", Tag: "1.5.0", RktPullDocker: false},
+			CoreDnsImage:                       Image{Repo: "coredns/coredns", Tag: "1.5.0", RktPullDocker: false},
 			Kube2IAMImage:                      Image{Repo: "jtblin/kube2iam", Tag: "0.9.0", RktPullDocker: false},
-			KubeDnsImage:                       Image{Repo: "k8s.gcr.io/k8s-dns-kube-dns-amd64", Tag: "1.14.7", RktPullDocker: false},
-			KubeDnsMasqImage:                   Image{Repo: "k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64", Tag: "1.14.7", RktPullDocker: false},
+			KubeDnsImage:                       Image{Repo: "k8s.gcr.io/k8s-dns-kube-dns-amd64", Tag: "1.15.2", RktPullDocker: false},
+			KubeDnsMasqImage:                   Image{Repo: "k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64", Tag: "1.15.2", RktPullDocker: false},
 			KubeReschedulerImage:               Image{Repo: "k8s.gcr.io/rescheduler-amd64", Tag: "v0.3.2", RktPullDocker: false},
-			DnsMasqMetricsImage:                Image{Repo: "k8s.gcr.io/k8s-dns-sidecar-amd64", Tag: "1.14.7", RktPullDocker: false},
+			DnsMasqMetricsImage:                Image{Repo: "k8s.gcr.io/k8s-dns-sidecar-amd64", Tag: "1.15.2", RktPullDocker: false},
 			ExecHealthzImage:                   Image{Repo: "k8s.gcr.io/exechealthz-amd64", Tag: "1.2", RktPullDocker: false},
-			HelmImage:                          Image{Repo: "quay.io/kube-aws/helm", Tag: "v2.6.0", RktPullDocker: false},
-			TillerImage:                        Image{Repo: "gcr.io/kubernetes-helm/tiller", Tag: "v2.7.2", RktPullDocker: false},
-			HeapsterImage:                      Image{Repo: "k8s.gcr.io/heapster", Tag: "v1.5.0", RktPullDocker: false},
-			MetricsServerImage:                 Image{Repo: "k8s.gcr.io/metrics-server-amd64", Tag: "v0.2.1", RktPullDocker: false},
-			AddonResizerImage:                  Image{Repo: "k8s.gcr.io/addon-resizer", Tag: "1.8.1", RktPullDocker: false},
+			HelmImage:                          Image{Repo: "quay.io/kube-aws/helm", Tag: "v2.13.1", RktPullDocker: false},
+			TillerImage:                        Image{Repo: "gcr.io/kubernetes-helm/tiller", Tag: "v2.13.1", RktPullDocker: false},
+			HeapsterImage:                      Image{Repo: "k8s.gcr.io/heapster", Tag: "v1.5.4", RktPullDocker: false},
+			MetricsServerImage:                 Image{Repo: "k8s.gcr.io/metrics-server-amd64", Tag: "v0.3.2", RktPullDocker: false},
+			AddonResizerImage:                  Image{Repo: "k8s.gcr.io/addon-resizer", Tag: "2.1", RktPullDocker: false},
 			KubernetesDashboardImage:           Image{Repo: "k8s.gcr.io/kubernetes-dashboard-amd64", Tag: "v1.10.1", RktPullDocker: false},
 			PauseImage:                         Image{Repo: "k8s.gcr.io/pause-amd64", Tag: "3.1", RktPullDocker: false},
 			JournaldCloudWatchLogsImage:        Image{Repo: "jollinshead/journald-cloudwatch-logs", Tag: "0.1", RktPullDocker: true},
