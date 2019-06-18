@@ -86,9 +86,14 @@ func (e APIEndpointLB) ManageSecurityGroup() bool {
 // Validate returns an error when there's any user error in the settings of the `loadBalancer` field
 func (e APIEndpointLB) Validate() error {
 	if e.Identifier.HasIdentifier() {
-		if e.PrivateSpecified != nil || !e.ClassicLoadBalancer() || len(e.SubnetReferences) > 0 || e.HostedZone.HasIdentifier() {
-			return errors.New("type, private, subnets, hostedZone must be omitted when id is specified to reuse an existing ELB")
+		if e.PrivateSpecified != nil || len(e.SubnetReferences) > 0 || e.HostedZone.HasIdentifier() {
+			return errors.New("private, subnets, hostedZone must be omitted when id is specified to reuse an existing ELB")
 		}
+
+		if !(e.ClassicLoadBalancer() || e.NetworkLoadBalancer()) {
+			return errors.New("LB must be an ELB or NLB")
+		}
+		fmt.Printf("++++++++\nIOAN: LB has id specified, so we don't need to create one, and it's of type '%s'\n+++++++++\n", e.Type)
 
 		return nil
 	}

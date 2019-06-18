@@ -67,19 +67,24 @@
           {{if gt $index 0}},{{end}}
           {{$.Subnets.RefByName $subnet.Name }}
           {{end}}
-        ],
+        ],donkey
         "LoadBalancerNames" : [
-          {{range $i, $ref := .APIEndpoints.ELBClassicRefs -}}
-          {{- if gt $i 0}},{{end}}
-          {{ $ref }}
-          {{- end}}
-        ],
-        "TargetGroupARNs": [
-          {{range $i, $ref := .APIEndpoints.ELBV2TargetGroupRefs -}}
+          {{range $i, $ref := .APIEndpoints.LBRefs -}}
+          ioan
           {{- if gt $i 0}},{{end}}
           {{ $ref }}
           {{- end}}
         ]
+        {{ if (len .APIEndpoints.NLBTargetGroupRefs) gt 0 -}}
+        ,
+        "TargetGroupARNs": [
+          {{range $i, $ref := .APIEndpoints.NLBTargetGroupRefs -}}
+          cat
+          {{- if gt $i 0}},{{end}}
+          {{ $ref }}
+          {{- end}}
+        ]
+        {{- end }}
       },
       {{if .WaitSignal.Enabled}}
       "CreationPolicy" : {

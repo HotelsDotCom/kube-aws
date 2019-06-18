@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
-	"github.com/kubernetes-incubator/kube-aws/pkg/api"
 	"sort"
 	"strings"
+
+	"github.com/kubernetes-incubator/kube-aws/pkg/api"
 )
 
 // APIEndpoints is a set of API endpoints associated to a Kubernetes cluster
@@ -39,6 +40,7 @@ func NewAPIEndpoints(configs []api.APIEndpoint, allSubnets []api.Subnet) (APIEnd
 		var err error
 		var lbSubnets []api.Subnet
 		lbConfig := c.LoadBalancer
+		// TODO may need to refactor this block to handle NLBs
 		if lbConfig.ManageELB() {
 			if len(lbConfig.SubnetReferences) > 0 {
 				lbSubnets, err = findSubnetsByReferences(lbConfig.SubnetReferences)
@@ -88,18 +90,20 @@ func (e APIEndpoints) FindByName(name string) (*APIEndpoint, error) {
 	return nil, fmt.Errorf("no API endpoint named \"%s\" defined under the `apiEndpoints[]`. The name must be one of: %s", name, strings.Join(apiEndpointNames, ", "))
 }
 
-// ELBClassicRefs returns the names of all the Classic ELBs to which controller nodes should be associated
-func (e APIEndpoints) ELBClassicRefs() []string {
+// LBRefs returns the names of all the Classic + Network LBs to which controller nodes should be associated
+func (e APIEndpoints) LBRefs() []string {
 	refs := []string{}
+	fmt.Print("++++++++\nIOAN: Grabbing LB refs\n+++++++++\n")
 	for _, endpoint := range e {
-		if endpoint.LoadBalancer.Enabled() && endpoint.LoadBalancer.ClassicLoadBalancer() {
+		if endpoint.LoadBalancer.Enabled() {
 			refs = append(refs, endpoint.LoadBalancer.Ref())
 		}
 	}
+	fmt.Printf("++++++++\nIOAN: All refs to be returned: '%v'\n+++++++++\n", refs)
 	return refs
 }
 
-// ELBV2TargetGroupRefs returns the names of all the Load Balancers v2 to which controller nodes should be associated
+// ELBV2TargetGroupRefs returns the names of all the ELBv2's to which controller nodes should be associated
 func (e APIEndpoints) ELBV2TargetGroupRefs() []string {
 	refs := []string{}
 	for _, endpoint := range e {
@@ -107,6 +111,19 @@ func (e APIEndpoints) ELBV2TargetGroupRefs() []string {
 			refs = append(refs, endpoint.LoadBalancer.TargetGroupRef())
 		}
 	}
+	return refs
+}
+
+// NLBTargetGroupRefs returns the names of all the NLB's to which controller nodes should be associated
+func (e APIEndpoints) NLBTargetGroupRefs() []string {
+	refs := []string{}
+	fmt.Print("++++++++\nIOAN: Checking NLB for targetGroupRef\n+++++++++\n")
+	for _, endpoint := range e {
+		if endpoint.LoadBalancer.Enabled() && endpoint.LoadBalancer.NetworkLoadBalancer() {
+			refs = append(refs, endpoint.LoadBalancer.TargetGroupRef())
+		}
+	}
+	fmt.Printf("++++++++\nIOAN: All refs to be returned: '%v'\n+++++++++\n", refs)
 	return refs
 }
 
