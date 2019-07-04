@@ -5962,12 +5962,16 @@ write_files:
       valid_services="kube-apiserver kube-controller-manager kube-scheduler"
 
       kubectl() {
+          /usr/bin/docker run -i --rm -v /etc/kubernetes:/etc/kubernetes:ro --net=host ${hyperkube_image} /hyperkube kubectl --kubeconfig=/etc/kubernetes/kubeconfig/admin.yaml "$@"
+      }
+
+      kubectl_with_retries() {
         local tries=0
         local result_text=""
         local return_code=0
 
         while [ "$tries" -lt "$retries" ]; do
-          result_text=$(docker run --rm -i --net=host -v /tmp:/tmp:rw -v /etc/kubernetes:/etc/kubernetes:ro  -v /etc/resolv.conf:/etc/resolv.conf:ro $hyperkube_image /kubectl "$@")
+          result_text=$(kubectl "$@")
           return_code=$?
           if [ "$return_code" -eq "0" ]; then
             echo "${result_text}"
@@ -6016,6 +6020,10 @@ write_files:
 
       disable_service() {
         local service=$1
+        pod=$(find_pod "${service}" "${myhostname}")
+        if [[ -n "$pod" ]]
+          kubectl_with_retries -n kube-system delete pod ${service}-${myhostname}
+        fi
 
         if [[ -f "/etc/kubernetes/manifests/${service}.yaml" ]]; then
           log "Moving manifest /etc/kubernetes/manifests/${service}.yaml to /etc/kubernetes/${service}.yaml"
@@ -6031,6 +6039,13 @@ write_files:
         else
           log "no docker container found matching k8s_${service}"
         fi
+      }
+
+      find_pod() {
+        local name=$1
+        local host=$2
+
+        kubectl -n kube-system get pod "${name}-${host}" --no-headers -o wide --ignore-not-found
       }
 
       # MAIN
