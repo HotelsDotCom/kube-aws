@@ -5962,7 +5962,7 @@ write_files:
       valid_services="kube-apiserver kube-controller-manager kube-scheduler"
 
       kubectl() {
-          /usr/bin/docker run -i --rm -v /etc/kubernetes:/etc/kubernetes:ro --net=host ${hyperkube_image} /hyperkube kubectl --kubeconfig=/etc/kubernetes/kubeconfig/admin.yaml "$@"
+          /usr/bin/docker run -i --rm -v /etc/kubernetes:/etc/kubernetes:ro --net=host ${hyperkube_image} /hyperkube kubectl "$@"
       }
 
       kubectl_with_retries() {
@@ -6021,7 +6021,7 @@ write_files:
       disable_service() {
         local service=$1
         pod=$(find_pod "${service}" "${myhostname}")
-        if [[ -n "$pod" ]]
+        if [[ -n "$pod" ]]; then
           kubectl_with_retries -n kube-system delete pod ${service}-${myhostname}
         fi
 
