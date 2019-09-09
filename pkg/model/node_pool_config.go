@@ -70,12 +70,6 @@ func (c NodePoolConfig) FeatureGates() api.FeatureGates {
 	if gates == nil {
 		gates = api.FeatureGates{}
 	}
-	if c.Gpu.Nvidia.IsEnabledOn(c.InstanceType) {
-		gates["Accelerators"] = "true"
-	}
-	if c.Experimental.GpuSupport.Enabled {
-		gates["DevicePlugins"] = "true"
-	}
 	return gates
 }
 

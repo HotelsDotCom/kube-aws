@@ -31,7 +31,6 @@ type WorkerNodePool struct {
 	NodeStatusUpdateFrequency string              `yaml:"nodeStatusUpdateFrequency"`
 	CustomFiles               []CustomFile        `yaml:"customFiles,omitempty"`
 	CustomSystemdUnits        []CustomSystemdUnit `yaml:"customSystemdUnits,omitempty"`
-	Gpu                       Gpu                 `yaml:"gpu"`
 	NodePoolRollingStrategy   string              `yaml:"nodePoolRollingStrategy,omitempty"`
 	UnknownKeys               `yaml:",inline"`
 }
@@ -63,7 +62,6 @@ func NewDefaultNodePoolConfig() WorkerNodePool {
 		},
 		NodeSettings:     newNodeSettings(),
 		SecurityGroupIds: []string{},
-		Gpu:              newDefaultGpu(),
 	}
 }
 
@@ -96,7 +94,7 @@ func (c WorkerNodePool) NodePoolLogicalName() string {
 	return naming.FromStackToCfnResource(c.NodePoolName)
 }
 
-func (c WorkerNodePool) validate(experimentalGpuSupportEnabled bool) error {
+func (c WorkerNodePool) validate() error {
 	// one is the default WorkerCount
 	if c.Count != 1 && (c.AutoScalingGroup.MinSize != nil && *c.AutoScalingGroup.MinSize != 0 || c.AutoScalingGroup.MaxSize != 0) {
 		return fmt.Errorf("`worker.autoScalingGroup.minSize` and `worker.autoScalingGroup.maxSize` can only be specified without `count`=%d", c.Count)
@@ -136,10 +134,6 @@ func (c WorkerNodePool) validate(experimentalGpuSupportEnabled bool) error {
 	}
 
 	if err := c.IAMConfig.Validate(); err != nil {
-		return err
-	}
-
-	if err := c.Gpu.Validate(c.InstanceType, experimentalGpuSupportEnabled); err != nil {
 		return err
 	}
 
@@ -213,7 +207,7 @@ func (c WorkerNodePool) RollingUpdateMinInstancesInService() int {
 }
 
 func (c WorkerNodePool) Validate(experimental Experimental) error {
-	return c.validate(experimental.GpuSupport.Enabled)
+	return c.validate()
 }
 
 func (c WorkerNodePool) WithDefaultsFrom(main DefaultWorkerSettings) WorkerNodePool {

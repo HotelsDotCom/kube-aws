@@ -82,11 +82,6 @@ func NewDefaultCluster() *Cluster {
 		Kube2IamSupport: Kube2IamSupport{
 			Enabled: false,
 		},
-		GpuSupport: GpuSupport{
-			Enabled:      false,
-			Version:      "",
-			InstallImage: "shelmangroup/coreos-nvidia-driver-installer:latest",
-		},
 		KubeletOpts: "",
 		LoadBalancer: LoadBalancer{
 			Enabled: false,

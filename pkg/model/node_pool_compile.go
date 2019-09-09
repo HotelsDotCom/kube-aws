@@ -23,7 +23,6 @@ func nodePoolPreprocess(c api.WorkerNodePool, main *Config) (*api.WorkerNodePool
 	c.KubeClusterSettings = main.KubeClusterSettings
 	c.HostOS = main.HostOS
 	c.Experimental.NodeDrainer = main.DeploymentSettings.Experimental.NodeDrainer
-	c.Experimental.GpuSupport = main.DeploymentSettings.Experimental.GpuSupport
 	c.Kubelet.SystemReservedResources = main.DeploymentSettings.Kubelet.SystemReservedResources
 	c.Kubelet.KubeReservedResources = main.DeploymentSettings.Kubelet.KubeReservedResources
 
