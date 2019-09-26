@@ -23,7 +23,6 @@ type Experimental struct {
 	AwsEnvironment              AwsEnvironment        `yaml:"awsEnvironment"`
 	AwsNodeLabels               AwsNodeLabels         `yaml:"awsNodeLabels"`
 	EphemeralImageStorage       EphemeralImageStorage `yaml:"ephemeralImageStorage"`
-	GpuSupport                  GpuSupport            `yaml:"gpuSupport,omitempty"`
 	KubeletOpts                 string                `yaml:"kubeletOpts,omitempty"`
 	LoadBalancer                LoadBalancer          `yaml:"loadBalancer"`
 	TargetGroup                 TargetGroup           `yaml:"targetGroup"`
@@ -105,12 +104,6 @@ type EphemeralImageStorage struct {
 	Enabled    bool   `yaml:"enabled"`
 	Disk       string `yaml:"disk"`
 	Filesystem string `yaml:"filesystem"`
-}
-
-type GpuSupport struct {
-	Enabled      bool   `yaml:"enabled"`
-	Version      string `yaml:"version"`
-	InstallImage string `yaml:"installImage"`
 }
 
 type KubeResourcesAutosave struct {

@@ -1,0 +1,15 @@
+metadata:
+  name: nvidia-gpu
+  version: 0.1.0
+spec:
+  cluster:
+    values:
+      image: shelmangroup/coreos-nvidia-driver-installer:latest
+      version: ""
+
+    kubernetes:
+      manifests:
+      - source:
+          path: manifests/nvidia-driver-installer-daemonset.yaml
+      - source:
+          path: manifests/device-plugin-daemonset.yaml

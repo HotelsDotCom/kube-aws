@@ -79,11 +79,6 @@ func NewDefaultCluster() *Cluster {
 			Disk:       "xvdb",
 			Filesystem: "xfs",
 		},
-		GpuSupport: GpuSupport{
-			Enabled:      false,
-			Version:      "",
-			InstallImage: "shelmangroup/coreos-nvidia-driver-installer:latest",
-		},
 		KubeletOpts: "",
 		LoadBalancer: LoadBalancer{
 			Enabled: false,
