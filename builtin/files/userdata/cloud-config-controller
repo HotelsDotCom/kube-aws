@@ -1107,11 +1107,6 @@ write_files:
         "${mfdir}/kube-node-drainer-asg-status-updater-de.yaml"
 
       {{ end -}}
-      {{ if .Experimental.GpuSupport.Enabled -}}
-      # NVIDIA GPU SUPPORT
-      deploy "${mfdir}/nvidia-driver-installer.yaml"
-
-      {{ end -}}
 
       # CUSTOMER SUPPLIED MANIFESTS
       # Allow installing kubernetes manifests via customFiles in the controller config - installs all manifests in mfdir/custom directory.
@@ -5357,18 +5352,18 @@ write_files:
 {{end}}
 
 # Without the namespace annotation the pod will be unable to assume any roles
-- path: /srv/kubernetes/manifests/kube-system-ns.yaml
-  content: |
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: kube-system
-      annotations:
-        iam.amazonaws.com/permitted: ".*"
-      labels:
-{{- range $key, $value := .KubeSystemNamespaceLabels }}
-        {{ $key }}: {{ $value }}
-{{- end }}
+  - path: /srv/kubernetes/manifests/kube-system-ns.yaml
+    content: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: kube-system
+        annotations:
+          iam.amazonaws.com/permitted: ".*"
+        labels:
+        {{- range $key, $value := .KubeSystemNamespaceLabels }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
 
   - path: /opt/bin/retry
     owner: root:root
