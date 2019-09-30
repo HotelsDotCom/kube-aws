@@ -7,6 +7,17 @@ spec:
       image: shelmangroup/coreos-nvidia-driver-installer:latest
       version: ""
 
+    machine:
+      roles:
+        worker:
+          kubelet:
+            nodeLabels:
+              kube-aws.coreos.com/gpu: nvidia
+            nodeTaints:
+            - key: kube-aws.coreos.com/gpu
+              value: nvidia
+              effect: NoSchedule
+
     kubernetes:
       manifests:
       - source:

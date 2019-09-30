@@ -75,6 +75,7 @@ type worker struct {
 	SystemdUnits        []api.CustomSystemdUnit
 	IAMPolicyStatements []api.IAMPolicyStatement
 	NodeLabels          api.NodeLabels
+	NodeTaints          api.Taints
 	FeatureGates        api.FeatureGates
 	Kubeconfig          string
 	KubeletFlags        api.CommandLineFlags
@@ -94,6 +95,7 @@ type controller struct {
 	SystemdUnits        []api.CustomSystemdUnit
 	IAMPolicyStatements []api.IAMPolicyStatement
 	NodeLabels          api.NodeLabels
+	NodeTaints          api.Taints
 	Kubeconfig          string
 	KubeletVolumeMounts []api.ContainerVolumeMount
 
@@ -308,6 +310,7 @@ func (e ClusterExtension) Worker(config interface{}) (*worker, error) {
 	systemdUnits := []api.CustomSystemdUnit{}
 	iamStatements := []api.IAMPolicyStatement{}
 	nodeLabels := api.NodeLabels{}
+	nodeTaints := api.Taints{}
 	featureGates := api.FeatureGates{}
 	configsets := map[string]interface{}{}
 	archivedFiles := []provisioner.RemoteFileSpec{}
@@ -364,6 +367,13 @@ func (e ClusterExtension) Worker(config interface{}) (*worker, error) {
 				nodeLabels[k] = v
 			}
 
+			if l := len(p.Spec.Cluster.Machine.Roles.Worker.Kubelet.NodeTaints); l > 0 {
+				logger.Infof("plugin %s added %d extra worker node taints", p.Name, l)
+			}
+			for _, v := range p.Spec.Cluster.Machine.Roles.Worker.Kubelet.NodeTaints {
+				nodeTaints = append(nodeTaints, v)
+			}
+
 			if l := len(p.Spec.Cluster.Machine.Roles.Worker.Kubelet.FeatureGates); l > 0 {
 				logger.Infof("plugin %s added %d extra worker kubelet feature gates", p.Name, l)
 			}
@@ -399,6 +409,7 @@ func (e ClusterExtension) Worker(config interface{}) (*worker, error) {
 		SystemdUnits:        systemdUnits,
 		IAMPolicyStatements: iamStatements,
 		NodeLabels:          nodeLabels,
+		NodeTaints:          nodeTaints,
 		FeatureGates:        featureGates,
 		KubeletVolumeMounts: kubeletMounts,
 		KubeletFlags:        kubeletFlags,
@@ -529,6 +540,7 @@ func (e ClusterExtension) Controller(clusterConfig interface{}) (*controller, er
 	files := []api.CustomFile{}
 	iamStatements := api.IAMPolicyStatements{}
 	nodeLabels := api.NodeLabels{}
+	nodeTaints := api.Taints{}
 	configsets := map[string]interface{}{}
 	archivedFiles := []provisioner.RemoteFileSpec{}
 	var kubeconfig string
@@ -631,6 +643,13 @@ func (e ClusterExtension) Controller(clusterConfig interface{}) (*controller, er
 				nodeLabels[k] = v
 			}
 
+			if l := len(p.Spec.Cluster.Machine.Roles.Controller.Kubelet.NodeTaints); l > 0 {
+				logger.Infof("plugin %s added %d extra controller node taints", p.Name, l)
+			}
+			for _, v := range p.Spec.Cluster.Machine.Roles.Controller.Kubelet.NodeTaints {
+				nodeTaints = append(nodeTaints, v)
+			}
+
 			if p.Spec.Cluster.Machine.Roles.Controller.Kubelet.Kubeconfig != "" {
 				logger.Infof("plugin %s changed the controller kubeconfig", p.Name)
 				kubeconfig = p.Spec.Cluster.Machine.Roles.Controller.Kubelet.Kubeconfig
@@ -676,6 +695,7 @@ func (e ClusterExtension) Controller(clusterConfig interface{}) (*controller, er
 		SystemdUnits:            systemdUnits,
 		IAMPolicyStatements:     iamStatements,
 		NodeLabels:              nodeLabels,
+		NodeTaints:              nodeTaints,
 		KubeletVolumeMounts:     kubeletMounts,
 		Kubeconfig:              kubeconfig,
 		CfnInitConfigSets:       configsets,

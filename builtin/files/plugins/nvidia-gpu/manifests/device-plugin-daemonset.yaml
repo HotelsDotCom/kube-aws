@@ -20,6 +20,11 @@ spec:
     spec:
       nodeSelector:
         kube-aws.coreos.com/gpu: nvidia
+      tolerations:
+      - key: "kube-aws.coreos.com/gpu"
+        operator: "Equal"
+        value: "nvidia"
+        effect: "NoSchedule"
       priorityClassName: system-node-critical
       hostNetwork: true
       hostPID: true

@@ -19,12 +19,13 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
-      tolerations:
-      - key: "nvidia.com/gpu"
-        effect: "NoSchedule"
-        operator: "Exists"
       nodeSelector:
         kube-aws.coreos.com/gpu: nvidia
+      tolerations:
+      - key: "kube-aws.coreos.com/gpu"
+        operator: "Equal"
+        value: "nvidia"
+        effect: "NoSchedule"
       priorityClassName: system-node-critical
       hostNetwork: true
       hostPID: true
@@ -43,7 +44,7 @@ spec:
         name: nvidia-driver-installer
         resources:
           requests:
-            cpu: 0.15
+            cpu: 250m
         securityContext:
           privileged: true
         env:

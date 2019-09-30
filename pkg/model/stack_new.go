@@ -102,6 +102,9 @@ func NewControlPlaneStack(conf *Config, opts api.StackTemplateOptions, extras cl
 			for k, v := range extraController.NodeLabels {
 				conf.Controller.NodeLabels[k] = v
 			}
+			for _, v := range extraController.NodeTaints {
+				conf.Controller.Taints = append(conf.Controller.Taints, v)
+			}
 			conf.HelmReleaseFilesets = extraController.HelmReleaseFilesets
 			conf.KubernetesManifestFiles = extraController.KubernetesManifestFiles
 
@@ -268,6 +271,9 @@ func NewWorkerStack(conf *Config, npconf *NodePoolConfig, opts api.StackTemplate
 
 			for k, v := range extraWorker.NodeLabels {
 				npconf.NodeSettings.NodeLabels[k] = v
+			}
+			for _, v := range extraWorker.NodeTaints {
+				npconf.NodeSettings.Taints = append(npconf.NodeSettings.Taints, v)
 			}
 			for k, v := range extraWorker.FeatureGates {
 				npconf.NodeSettings.FeatureGates[k] = v

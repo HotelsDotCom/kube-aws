@@ -236,6 +236,7 @@ type SystemdUnit struct {
 type KubeletSpec struct {
 	FeatureGates FeatureGates           `yaml:"featureGates,omitempty"`
 	NodeLabels   NodeLabels             `yaml:"nodeLabels,omitempty"`
+	NodeTaints   Taints                 `yaml:"nodeTaints,omitempty"`
 	Kubeconfig   string                 `yaml:"kubeconfig,omitempty"`
 	Mounts       []ContainerVolumeMount `yaml:"mounts,omitempty"`
 }
