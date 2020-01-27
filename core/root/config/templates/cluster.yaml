@@ -1376,6 +1376,13 @@ addons:
   # Metrics Server (https://github.com/kubernetes-incubator/metrics-server)
   metricsServer:
     enabled: false
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 80m
+        memory: 200Mi
 
   # When set to true this configures security groups for prometheus between nodes.
   # This includes the following ports: 10252, 10251, 10250, 9100, and 4194

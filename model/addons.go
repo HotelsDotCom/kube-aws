@@ -22,7 +22,8 @@ type Rescheduler struct {
 }
 
 type MetricsServer struct {
-	Enabled     bool `yaml:"enabled"`
+	Enabled     bool             `yaml:"enabled"`
+	Resources   ComputeResources `yaml:"resources,omitempty"`
 	UnknownKeys `yaml:",inline"`
 }
 

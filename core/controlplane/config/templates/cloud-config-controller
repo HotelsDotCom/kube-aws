@@ -4058,11 +4058,11 @@ write_files:
                 - --requestheader-extra-headers-prefix=X-Remote-Extra
                 resources:
                   limits:
-                    cpu: 500m
-                    memory: 512Mi
+                    cpu: {{ if .Addons.MetricsServer.Resources.Limits.Cpu }}{{ .Addons.MetricsServer.Resources.Limits.Cpu }}{{ else }}500m{{ end }}
+                    memory: {{ if .Addons.MetricsServer.Resources.Limits.Memory }}{{ .Addons.MetricsServer.Resources.Limits.Memory }}{{ else }}512Mi{{ end }}
                   requests:
-                    cpu: 80m
-                    memory: 200Mi
+                    cpu: {{ if .Addons.MetricsServer.Resources.Requests.Cpu }}{{ .Addons.MetricsServer.Resources.Requests.Cpu }}{{ else }}80m{{ end }}
+                    memory: {{ if .Addons.MetricsServer.Resources.Requests.Memory }}{{ .Addons.MetricsServer.Resources.Requests.Memory }}{{ else }}200Mi{{ end }}
 
   - path: /srv/kubernetes/manifests/metrics-server-apisvc.yaml
     content: |
