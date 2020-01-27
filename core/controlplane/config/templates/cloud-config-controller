@@ -2354,6 +2354,9 @@ write_files:
                 k8s-app: kube-node-drainer-ds
               annotations:
                 scheduler.alpha.kubernetes.io/critical-pod: ''
+                {{if ne .Experimental.NodeDrainer.IAMRole.ARN.Arn "" -}}
+                iam.amazonaws.com/role: {{ .Experimental.NodeDrainer.IAMRole.ARN.Arn }}
+                {{ end }}
             spec:
               {{if .Experimental.Admission.Priority.Enabled -}}
               priorityClassName: system-node-critical
